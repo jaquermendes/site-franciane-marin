@@ -378,9 +378,9 @@
     $('contador-novas').textContent = String(pendentes);
     $('contador-novas').hidden = !pendentes;
 
-    grupo(caixa, '1', 'Escolher horário', 'Veja as sugestões da paciente e marque a melhor para você.', escolher, cartaoEscolher);
-    grupo(caixa, '2', 'Aguardando resposta', 'Você já ofereceu um horário. Ele fica reservado até a paciente responder.', aguardando, cartaoAguardando);
-    grupo(caixa, '3', 'Consultas confirmadas', 'Próximas consultas. Dá para reenviar a confirmação, remarcar ou cancelar.', confirmadas, cartaoConfirmada);
+    grupo(caixa, '1', 'Escolher horário', 'Abra o pedido, marque a melhor sugestão e envie a proposta.', escolher, cartaoEscolher, resumoEscolher, acaoEscolher);
+    grupo(caixa, '2', 'Aguardando resposta', 'O horário oferecido fica reservado até a paciente responder.', aguardando, cartaoAguardando, resumoAguardando, acaoAguardando);
+    grupo(caixa, '3', 'Consultas confirmadas', 'Próximas consultas. Abra para reenviar a confirmação, remarcar ou cancelar.', confirmadas, cartaoConfirmada, resumoConfirmada, acaoConfirmada);
 
     // Canceladas e histórico ficam fechados e em linhas curtas, para não ocupar espaço.
     listaCompacta(caixa, 'Canceladas (' + canceladas.length + ')', canceladas);
@@ -394,13 +394,53 @@
     caixa.appendChild(el('details', { classe: 'adm-historico' }, [el('summary', { texto: titulo }), ul]));
   }
 
-  function grupo(caixa, numero, titulo, ajuda, lista, desenhar) {
+  // Pedidos abertos (expandidos) continuam abertos depois de recarregar a lista.
+  var abertos = {};
+
+  function grupo(caixa, numero, titulo, ajuda, lista, desenhar, resumo, acao) {
     caixa.appendChild(el('div', { classe: 'adm-etapa' }, [
       el('span', { classe: 'adm-etapa-num', texto: numero }),
       el('div', {}, [el('h2', { texto: titulo + ' (' + lista.length + ')' }), el('p', { texto: ajuda })])
     ]));
-    if (!lista.length) caixa.appendChild(el('p', { classe: 'adm-cartao adm-vazio', texto: 'Nada por aqui.' }));
-    lista.forEach(function (s) { caixa.appendChild(desenhar(s)); });
+    if (!lista.length) { caixa.appendChild(el('p', { classe: 'adm-vazio-linha', texto: 'Nada por aqui.' })); return; }
+    var ul = el('ul', { classe: 'adm-itens' });
+    lista.forEach(function (s) {
+      var item = el('details', { classe: 'adm-item' });
+      if (abertos[s.id]) item.setAttribute('open', '');
+      item.addEventListener('toggle', function () { abertos[s.id] = item.open; });
+      var botaoAcao = acao(s, item);
+      item.appendChild(el('summary', { classe: 'adm-item-linha' }, [
+        el('span', { classe: 'adm-item-nome' }, [el('strong', { texto: s.nome }), el('small', { texto: formatoDe(s) })]),
+        el('span', { classe: 'adm-item-resumo', texto: resumo(s) }),
+        botaoAcao
+      ]));
+      item.appendChild(desenhar(s));
+      ul.appendChild(el('li', {}, [item]));
+    });
+    caixa.appendChild(ul);
+  }
+
+  function resumoEscolher(s) {
+    return s.opcoes.length + (s.opcoes.length > 1 ? ' sugestões' : ' sugestão') + ' · ' + s.opcoes.map(function (o) { return dataCurta(o.data) + ' ' + o.horario; }).join(' · ');
+  }
+  function resumoAguardando(s) { return 'Ofereceu ' + dataCurta(s.data) + ' às ' + s.horario; }
+  function resumoConfirmada(s) { return dataCurta(s.data) + ' às ' + s.horario; }
+
+  // Botão da linha: não abre/fecha o item quando clicado, a não ser que seja a intenção.
+  function botaoLinha(texto, classe, aoClicar) {
+    return el('button', { type: 'button', classe: 'botao ' + classe, texto: texto, onclick: function (ev) { ev.preventDefault(); ev.stopPropagation(); aoClicar(); } });
+  }
+  function acaoEscolher(s, item) { return botaoLinha('Escolher horário', 'botao-rosa', function () { item.open = !item.open; }); }
+  function acaoAguardando(s) {
+    return botaoLinha('Paciente confirmou', 'botao-rosa', function () { mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Ela está em "Consultas confirmadas".'); });
+  }
+  function acaoConfirmada(s, item) { return botaoLinha('Abrir', 'botao-contorno', function () { item.open = !item.open; }); }
+
+  function detalhesContato(s) {
+    return el('p', { classe: 'adm-contato' }, [
+      el('a', { href: 'https://wa.me/' + String(s.telefone).replace(/\D/g, ''), target: '_blank', rel: 'noopener', texto: s.telefoneExibicao || s.telefone }),
+      ' · ' + chegada(s)
+    ]);
   }
 
   function cabecalho(s) {
@@ -443,7 +483,7 @@
     s.opcoes.forEach(function (o, i) {
       lista.appendChild(el('button', {
         type: 'button', role: 'radio', 'aria-checked': String(i === escolhida), classe: 'adm-escolha-item',
-        onclick: function () { escolhas[s.id] = i; delete rascunhos[s.id + ':proposta']; desenharSolicitacoes(); }
+        onclick: function () { escolhas[s.id] = i; abertos[s.id] = true; delete rascunhos[s.id + ':proposta']; desenharSolicitacoes(); }
       }, [
         el('span', { classe: 'adm-escolha-marca', 'aria-hidden': 'true' }),
         el('span', { classe: 'adm-escolha-texto' }, [el('strong', { texto: (i + 1) + 'ª sugestão' }), dataCurta(o.data) + ' às ' + o.horario])
@@ -454,14 +494,13 @@
       // O WhatsApp abre numa aba nova; aqui o pedido passa para "Aguardando resposta".
       mudarStatus(s, 'aguardando', escolhida, 'Proposta enviada. O pedido foi para "Aguardando resposta".');
     });
-    return el('article', { classe: 'adm-cartao adm-sol' }, [
-      cabecalho(s),
+    return el('div', { classe: 'adm-item-corpo' }, [
+      detalhesContato(s),
       el('p', { classe: 'adm-passo', texto: 'Qual horário você quer oferecer?' }),
       lista,
       msg.bloco,
       el('div', { classe: 'adm-sol-acoes' }, [
         msg.botao,
-        el('button', { type: 'button', classe: 'botao', texto: 'Arquivar pedido', onclick: function () { resolver(s, true); } }),
         botaoCancelar(s)
       ])
     ]);
@@ -470,13 +509,10 @@
   function cartaoAguardando(s) {
     var oferecido = { data: s.data, horario: s.horario };
     var msg = caixaMensagem(s, s.id + ':proposta', textoProposta(s, oferecido), 'Reenviar proposta no WhatsApp');
-    return el('article', { classe: 'adm-cartao adm-sol' }, [
-      cabecalho(s),
+    return el('div', { classe: 'adm-item-corpo' }, [
+      detalhesContato(s),
       el('p', { classe: 'adm-oferecido' }, ['Você ofereceu ', el('strong', { texto: dataCurta(s.data) + ' às ' + s.horario }), '. Quando ' + primeiroNome(s) + ' responder, registre aqui.']),
       el('div', { classe: 'adm-sol-acoes' }, [
-        el('button', { type: 'button', classe: 'botao botao-rosa', texto: 'Paciente confirmou', onclick: function () {
-          mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Ela está em "Consultas confirmadas".');
-        } }),
         el('button', { type: 'button', classe: 'botao', texto: 'Oferecer outro horário', onclick: function () { mudarStatus(s, 'nova', null, 'Escolha outro horário para oferecer.'); } }),
         botaoCancelar(s)
       ]),
@@ -497,8 +533,8 @@
         remarcar(s, data.value, hora.value);
       } })])
     ]);
-    return el('article', { classe: 'adm-cartao adm-sol confirmada' }, [
-      cabecalho(s),
+    return el('div', { classe: 'adm-item-corpo' }, [
+      detalhesContato(s),
       el('p', { classe: 'adm-sol-quando' }, [el('span', { classe: 'adm-status confirmada', texto: 'Confirmada' }), ' ' + dataCurta(s.data) + ' às ' + s.horario]),
       msg.bloco,
       el('div', { classe: 'adm-sol-acoes' }, [

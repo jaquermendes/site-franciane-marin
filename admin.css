@@ -195,3 +195,30 @@
 .adm-escolha-texto strong { font-size: 11px; }
 .adm-escolha-marca { width: 18px; height: 18px; }
 .adm-msg-campo { min-height: 120px; }
+
+/* Lista enxuta de pedidos */
+.adm-sol-acoes .botao-rosa, .adm-item-linha .botao-rosa { background: var(--rosa); border-color: var(--rosa); color: var(--branco); }
+.adm-sol-acoes .botao-rosa:hover, .adm-item-linha .botao-rosa:hover { background: var(--rosa-escuro); color: var(--branco); }
+.adm-etapa { margin: 22px 0 8px; }
+.adm-etapa h2 { font-size: 17px; }
+.adm-etapa p { font-size: 13px; }
+.adm-etapa-num { width: 28px; height: 28px; font-size: 14px; }
+.adm-vazio-linha { margin: 0 0 4px 40px; font-size: 14px; color: var(--texto-suave); }
+.adm-itens { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.adm-item { background: var(--branco); border: 1px solid var(--linha); border-radius: 14px; }
+.adm-item[open] { border-color: #D9CDD5; box-shadow: 0 6px 20px rgba(26,22,25,.06); }
+.adm-item-linha { list-style: none; display: grid; grid-template-columns: minmax(120px, 220px) 1fr auto; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; cursor: pointer; min-height: 56px; }
+.adm-item-linha::-webkit-details-marker { display: none; }
+.adm-item-nome { display: flex; flex-direction: column; line-height: 1.2; }
+.adm-item-nome strong { font-family: var(--display); font-size: 16px; }
+.adm-item-nome small { font-size: 12px; color: var(--texto-suave); }
+.adm-item-resumo { font-size: 14px; color: var(--texto); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-item-linha .botao { min-height: 40px; padding: 0 16px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.adm-item-linha .botao-contorno { background: var(--branco); }
+.adm-item-corpo { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 16px; border-top: 1px solid var(--linha); }
+.adm-contato { font-size: 13px; color: var(--texto-suave); padding-top: 10px; }
+.adm-contato a { font-weight: 600; }
+@media (max-width: 600px) {
+  .adm-item-linha { grid-template-columns: 1fr auto; }
+  .adm-item-resumo { grid-column: 1 / -1; grid-row: 2; white-space: normal; font-size: 13px; }
+}
