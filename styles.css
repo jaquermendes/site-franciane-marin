@@ -304,3 +304,13 @@ button, input, select { font: inherit; }
 .escolhidos button:hover { background: #4A414D; color: var(--branco); }
 .resumo p { margin-bottom: 6px; }
 .resumo ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 2px; color: var(--rosa-suave); font-weight: 600; }
+
+/* Atendimento particular */
+.particular { display: flex; flex-wrap: wrap; gap: 24px 40px; align-items: center; padding: 32px; border-radius: 24px; border: 1px solid #3B3239; background: linear-gradient(0deg, rgba(162,54,143,.10), rgba(162,54,143,.10)), var(--carvao-2); }
+.particular-texto { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.particular-texto h3 { font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); line-height: 1.1; letter-spacing: -.02em; }
+.particular-lista { flex: 1 1 460px; min-width: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.particular-lista li { display: flex; flex-direction: column; gap: 2px; padding-left: 16px; border-left: 3px solid var(--rosa-suave); }
+.particular-lista strong { font-family: var(--display); font-size: 17px; }
+.particular-lista span { color: var(--texto-claro); }
+@media (max-width: 760px) { .particular { padding: 22px 20px; } }
