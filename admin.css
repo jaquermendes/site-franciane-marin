@@ -185,3 +185,13 @@
 .adm-linha-texto strong { color: var(--grafite); }
 .adm-linha-rotulo { font-weight: 600; }
 .adm-linha .botao { min-height: 36px; padding: 0 14px; font-size: 13px; border: 1.5px solid var(--carvao); background: var(--branco); cursor: pointer; }
+
+/* Sugestões compactas: sem esticar a altura */
+.adm-sol { flex-wrap: nowrap; justify-content: flex-start; gap: 12px; }
+.adm-sol > * { flex: 0 0 auto; }
+.adm-escolha { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); grid-auto-rows: auto; align-items: start; gap: 8px; }
+.adm-escolha-item { min-height: 0; padding: 8px 12px; gap: 10px; border-radius: 12px; }
+.adm-escolha-texto { gap: 1px; line-height: 1.3; }
+.adm-escolha-texto strong { font-size: 11px; }
+.adm-escolha-marca { width: 18px; height: 18px; }
+.adm-msg-campo { min-height: 120px; }
