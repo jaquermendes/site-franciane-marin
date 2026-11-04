@@ -114,3 +114,12 @@
 .adm-sol { align-items: flex-start; }
 .adm-sol-info { flex: 1 1 360px; }
 .adm-horario.sugerido { box-shadow: inset 0 0 0 2px #FFE08A; }
+
+/* Mostrar senha */
+.adm-senha { position: relative; display: flex; }
+.adm-senha input { flex: 1 1 auto; min-width: 0; padding-right: 52px; }
+.adm-senha button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border: 0; border-radius: 10px; background: transparent; color: var(--texto-suave); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.adm-senha button:hover { color: var(--rosa); background: var(--rosa-claro); }
+.adm-senha .olho-fechado { display: none; }
+.adm-senha button[aria-pressed="true"] .olho-aberto { display: none; }
+.adm-senha button[aria-pressed="true"] .olho-fechado { display: block; }

@@ -49,6 +49,15 @@
   }
 
   // ---------- Login ----------
+  $('ver-senha').addEventListener('click', function () {
+    var campo = $('senha');
+    var mostrar = campo.type === 'password';
+    campo.type = mostrar ? 'text' : 'password';
+    this.setAttribute('aria-pressed', String(mostrar));
+    this.setAttribute('aria-label', mostrar ? 'Esconder senha' : 'Mostrar senha');
+    campo.focus();
+  });
+
   $('form-login').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var usuario = $('usuario').value.trim();
@@ -62,6 +71,8 @@
       estado.token = resp.token;
       guardar('fm_token', resp.token);
       $('senha').value = '';
+      $('senha').type = 'password';
+      $('ver-senha').setAttribute('aria-pressed', 'false');
       $('erro-login').textContent = '';
       abrirPainel();
     }).catch(function () {
