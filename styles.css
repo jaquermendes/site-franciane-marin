@@ -349,3 +349,6 @@ button, input, select { font: inherit; }
 .preparo-icone svg { width: 22px; height: 22px; }
 .preparo-lista h3 { font-size: 16px; }
 .preparo-formatos > div { padding: 14px 18px; }
+
+.ok-local { font-size: 14px; }
+.ok-local a { color: var(--branco); font-weight: 600; }

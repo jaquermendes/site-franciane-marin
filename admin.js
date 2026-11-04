@@ -335,17 +335,25 @@
     return 'https://wa.me/' + String(s.telefone).replace(/\D/g, '') + '?text=' + encodeURIComponent(texto);
   }
 
+  // Endereço com link do Maps para presencial; aviso simples para online.
+  function textoLocal(s) {
+    if (formatoDe(s) === 'online') return '💻 A consulta é online, por vídeo.';
+    return '📍 Como chegar: ' + (CONFIG.endereco || 'Espaço Vida, Araraquara/SP') + (CONFIG.mapsUrl ? '\n' + CONFIG.mapsUrl : '');
+  }
+
   function textoProposta(s, opcao) {
     return (estado.painel.mensagemProposta || estado.painel.mensagemWhatsapp || '')
       .replace(/\{nome\}/g, primeiroNome(s))
       .replace(/\{formato\}/g, formatoDe(s))
-      .replace(/\{proposta\}/g, opcao ? comArtigo(opcao) : '');
+      .replace(/\{proposta\}/g, opcao ? comArtigo(opcao) : '')
+      .replace(/\{local\}/g, textoLocal(s));
   }
 
   function textoConfirmacao(s) {
     return [
       'Olá, ' + primeiroNome(s) + '! 😊',
       '✅ Sua consulta ' + formatoDe(s) + ' está *confirmada ' + comArtigo(s) + '*.',
+      textoLocal(s),
       '',
       'Se quiser, separei algumas dicas do que pode ajudar na consulta (nada é obrigatório, viu?):',
       'https://www.francianemarin.com.br/#preparo',

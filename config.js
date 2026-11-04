@@ -6,8 +6,12 @@ window.SITE_CONFIG = {
 
   whatsapp: '5516997498570',
 
+  // Consultório (aparece no site e nas mensagens do WhatsApp das consultas presenciais).
+  endereco: 'Espaço Vida · Avenida Raphael Logatti, 866 · Araraquara/SP · 14806-022',
+  mapsUrl: 'https://www.google.com/maps/search/?api=1&query=Espa%C3%A7o+Vida%2C+Avenida+Raphael+Logatti%2C+866%2C+Araraquara+-+SP%2C+14806-022',
+
   notas: {
-    presencial: 'Espaço Vida, Araraquara. Inclui avaliação corporal completa.',
+    presencial: 'Espaço Vida, Av. Raphael Logatti, 866, Araraquara. Inclui avaliação corporal completa.',
     online: 'Por vídeo, para qualquer cidade do Brasil. Horários diferentes do presencial.'
   }
 };

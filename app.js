@@ -371,6 +371,18 @@
         resumo.appendChild(titulo);
         resumo.appendChild(ol);
         resumo.appendChild(aviso);
+        if (estado.modo === 'presencial' && CONFIG.mapsUrl) {
+          var local = document.createElement('p');
+          local.className = 'ok-local';
+          local.appendChild(document.createTextNode('Local: ' + (CONFIG.endereco || 'Espaço Vida, Araraquara/SP') + '. '));
+          var mapa = document.createElement('a');
+          mapa.href = CONFIG.mapsUrl;
+          mapa.target = '_blank';
+          mapa.rel = 'noopener';
+          mapa.textContent = 'Ver como chegar';
+          local.appendChild(mapa);
+          resumo.appendChild(local);
+        }
         var msg = 'Oi, Franciane! Meu nome é ' + dados.nome + '. Acabei de pedir pelo site uma consulta ' + formatoTexto() + ' com estas sugestões de horário:\n' + listaOpcoes('\n');
         $('ok-whats').href = 'https://wa.me/' + (CONFIG.whatsapp || '') + '?text=' + encodeURIComponent(msg);
         irPara(3);
