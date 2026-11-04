@@ -142,7 +142,7 @@
   });
 
   function ocupadosDoDia(iso) {
-    return (estado.painel.solicitacoes || []).filter(function (s) { return s.data === iso && s.status === 'confirmada'; });
+    return (estado.painel.solicitacoes || []).filter(function (s) { return s.data === iso && (s.status === 'confirmada' || s.status === 'aguardando'); });
   }
 
   // Quem sugeriu cada horário do dia (só solicitações ainda não confirmadas).
@@ -201,7 +201,7 @@
       var s = mapaOcupado[h];
       if (s) {
         grade.appendChild(el('div', { classe: 'adm-horario ocupado', title: s.nome + ' · ' + s.modo }, [
-          el('strong', { texto: h }), el('small', { texto: s.nome + (s.modo !== estado.modo ? ' (' + s.modo + ')' : '') })
+          el('strong', { texto: h }), el('small', { texto: s.nome + (s.status === 'aguardando' ? ' · oferecido' : '') + (s.modo !== estado.modo ? ' (' + s.modo + ')' : '') })
         ]));
         return;
       }
@@ -319,39 +319,32 @@
   // ---------- Solicitações ----------
   function textoOpcao(o) { return dataLonga(o.data).toLowerCase() + ', às ' + o.horario; }
 
-  function primeiraData(s) {
-    if (s.status === 'confirmada' && s.data) return s.data + ' ' + s.horario;
-    return s.opcoes.map(function (o) { return o.data + ' ' + o.horario; }).sort()[0] || '';
-  }
-
-  // Texto editado à mão por solicitação, para não se perder quando a lista é redesenhada.
-  var rascunhos = {};
-  // Qual sugestão ela vai oferecer na mensagem ("Consigo na sexta..."), por solicitação.
-  var propostas = {};
-
   function comArtigo(o) {
     var dia = deISO(o.data).getDay();
     return (dia === 0 || dia === 6 ? 'no ' : 'na ') + textoOpcao(o);
   }
 
+  function primeiroNome(s) { return String(s.nome).split(' ')[0]; }
+  function formatoDe(s) { return s.modo === 'online' ? 'online' : 'presencial'; }
+
+  // Mensagens editadas à mão e opção escolhida, por pedido, para não se perderem ao redesenhar.
+  var rascunhos = {};
+  var escolhas = {};
+
   function linkWhatsapp(s, texto) {
     return 'https://wa.me/' + String(s.telefone).replace(/\D/g, '') + '?text=' + encodeURIComponent(texto);
   }
 
-  function textoWhatsapp(s) {
-    var formato = s.modo === 'online' ? 'online' : 'presencial';
-    var nome = String(s.nome).split(' ')[0];
-    var texto;
-    if (s.status === 'confirmada') {
-      texto = 'Olá, ' + nome + '! Aqui é a Franciane Marin. Sua consulta ' + formato + ' está confirmada para ' + textoOpcao(s) + '. Qualquer dúvida, é só me chamar por aqui. Até lá!';
-    } else {
-      var proposta = s.opcoes[propostas[s.id] || 0] || s.opcoes[0];
-      texto = (estado.painel.mensagemProposta || estado.painel.mensagemWhatsapp || '')
-        .replace(/\{nome\}/g, nome)
-        .replace(/\{formato\}/g, formato)
-        .replace(/\{proposta\}/g, proposta ? comArtigo(proposta) : '');
-    }
-    return texto;
+  function textoProposta(s, opcao) {
+    return (estado.painel.mensagemProposta || estado.painel.mensagemWhatsapp || '')
+      .replace(/\{nome\}/g, primeiroNome(s))
+      .replace(/\{formato\}/g, formatoDe(s))
+      .replace(/\{proposta\}/g, opcao ? comArtigo(opcao) : '');
+  }
+
+  function textoConfirmacao(s) {
+    return 'Olá, ' + primeiroNome(s) + '! Sua consulta ' + formatoDe(s) + ' está confirmada ' + comArtigo(s) +
+      '. Qualquer dúvida, é só me chamar por aqui. Até lá!';
   }
 
   function chegada(s) {
@@ -361,128 +354,208 @@
       ' às ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
   }
 
+  function hojeISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
   function desenharSolicitacoes() {
     var caixa = $('lista-solicitacoes');
     caixa.innerHTML = '';
-    // Ordem de chegada: quem pediu primeiro aparece primeiro.
-    var todas = (estado.painel.solicitacoes || []).slice().sort(function (a, b) {
-      return String(a.criadoEm).localeCompare(String(b.criadoEm));
-    });
-    var abertas = todas.filter(function (s) { return !s.resolvido && s.status !== 'cancelada'; });
-    var fechadas = todas.filter(function (s) { return s.resolvido || s.status === 'cancelada'; }).reverse();
-    $('contador-novas').textContent = String(abertas.length);
-    $('contador-novas').hidden = !abertas.length;
+    var hoje = hojeISO();
+    var porChegada = function (a, b) { return String(a.criadoEm).localeCompare(String(b.criadoEm)); };
+    var porData = function (a, b) { return (a.data + a.horario).localeCompare(b.data + b.horario); };
+    var todas = estado.painel.solicitacoes || [];
+    var escolher = todas.filter(function (s) { return s.status === 'nova' && !s.resolvido; }).sort(porChegada);
+    var aguardando = todas.filter(function (s) { return s.status === 'aguardando' && !s.resolvido; }).sort(porChegada);
+    var confirmadas = todas.filter(function (s) { return s.status === 'confirmada' && s.data >= hoje; }).sort(porData);
+    var historico = todas.filter(function (s) {
+      return s.status === 'cancelada' || (s.resolvido && s.status !== 'confirmada') || (s.status === 'confirmada' && s.data < hoje);
+    }).sort(porChegada).reverse();
 
-    caixa.appendChild(el('p', { classe: 'adm-explica', texto: 'Pedidos dos últimos 30 dias, em ordem de chegada.' }));
-    caixa.appendChild(el('h2', { classe: 'adm-grupo', texto: 'A responder (' + abertas.length + ')' }));
-    if (!abertas.length) caixa.appendChild(el('p', { classe: 'adm-cartao adm-vazio', texto: 'Tudo respondido por aqui.' }));
-    abertas.forEach(function (s) { caixa.appendChild(cartao(s)); });
+    var pendentes = escolher.length + aguardando.length;
+    $('contador-novas').textContent = String(pendentes);
+    $('contador-novas').hidden = !pendentes;
 
-    if (fechadas.length) {
-      caixa.appendChild(el('h2', { classe: 'adm-grupo', texto: 'Resolvidas e canceladas (' + fechadas.length + ')' }));
-      fechadas.forEach(function (s) { caixa.appendChild(cartao(s)); });
+    grupo(caixa, '1', 'Escolher horário', 'Veja as sugestões da paciente e marque a melhor para você.', escolher, cartaoEscolher);
+    grupo(caixa, '2', 'Aguardando resposta', 'Você já ofereceu um horário. Ele fica reservado até a paciente responder.', aguardando, cartaoAguardando);
+    grupo(caixa, '3', 'Consultas confirmadas', 'Próximas consultas. Dá para reenviar a confirmação, remarcar ou cancelar.', confirmadas, cartaoConfirmada);
+
+    if (historico.length) {
+      var det = el('details', { classe: 'adm-historico' }, [el('summary', { texto: 'Histórico dos últimos 30 dias (' + historico.length + ')' })]);
+      historico.forEach(function (s) { det.appendChild(cartaoHistorico(s)); });
+      caixa.appendChild(det);
     }
   }
 
-  function cartao(s) {
-    var fechada = s.resolvido || s.status === 'cancelada';
-    var rotulo = { nova: 'Nova · escolha um horário', confirmada: 'Confirmada', cancelada: 'Cancelada' }[s.status] || s.status;
-    var selos = el('div', { classe: 'adm-selos' }, [
-      el('span', { classe: 'adm-status ' + s.status, texto: rotulo }),
-      s.resolvido ? el('span', { classe: 'adm-status resolvido', texto: 'Resolvido' }) : null,
+  function grupo(caixa, numero, titulo, ajuda, lista, desenhar) {
+    caixa.appendChild(el('div', { classe: 'adm-etapa' }, [
+      el('span', { classe: 'adm-etapa-num', texto: numero }),
+      el('div', {}, [el('h2', { texto: titulo + ' (' + lista.length + ')' }), el('p', { texto: ajuda })])
+    ]));
+    if (!lista.length) caixa.appendChild(el('p', { classe: 'adm-cartao adm-vazio', texto: 'Nada por aqui.' }));
+    lista.forEach(function (s) { caixa.appendChild(desenhar(s)); });
+  }
+
+  function cabecalho(s) {
+    return el('div', { classe: 'adm-sol-cabeca' }, [
+      el('strong', { classe: 'adm-sol-nome', texto: s.nome }),
+      el('span', { classe: 'adm-sol-quem', texto: (s.telefoneExibicao || s.telefone) + ' · ' + formatoDe(s) }),
       el('span', { classe: 'adm-chegada', texto: chegada(s) })
     ]);
-    var info = [selos, el('span', { classe: 'adm-sol-quem', texto: s.nome + ' · ' + (s.telefoneExibicao || s.telefone) + ' · ' + s.modo })];
-
-    if (s.status === 'confirmada') {
-      info.splice(1, 0, el('span', { classe: 'adm-sol-quando', texto: dataCurta(s.data) + ' às ' + s.horario }));
-    } else {
-      var opcoes = el('ol', { classe: 'adm-opcoes' });
-      var oferecida = propostas[s.id] || 0;
-      s.opcoes.forEach(function (o, i) {
-        var ativa = s.status === 'nova' && !fechada;
-        opcoes.appendChild(el('li', { classe: ativa && i === oferecida ? 'oferecida' : '' }, [
-          el('span', {}, [el('strong', { texto: (i + 1) + 'ª opção ' }), dataCurta(o.data) + ' às ' + o.horario]),
-          ativa ? el('div', { classe: 'adm-opcao-acoes' }, [
-            el('button', {
-              type: 'button', classe: 'botao', 'aria-pressed': String(i === oferecida),
-              texto: i === oferecida ? 'Na mensagem' : 'Oferecer na mensagem',
-              onclick: function () {
-                propostas[s.id] = i;
-                delete rascunhos[s.id + ':' + s.status];
-                desenharSolicitacoes();
-              }
-            }),
-            el('button', {
-              type: 'button', classe: 'botao botao-rosa', texto: 'Confirmar este',
-              'aria-label': 'Confirmar ' + dataCurta(o.data) + ' às ' + o.horario + ' para ' + s.nome,
-              onclick: function () { mudarStatus(s, 'confirmada', i); }
-            })
-          ]) : null
-        ]));
-      });
-      info.splice(1, 0, opcoes);
-    }
-
-    var botaoWhats = null;
-    if (!fechada) {
-      var chave = s.id + ':' + s.status;
-      var texto = rascunhos[chave] || textoWhatsapp(s);
-      botaoWhats = el('a', {
-        classe: 'botao botao-whats', href: linkWhatsapp(s, texto), target: '_blank', rel: 'noopener',
-        texto: s.status === 'confirmada' ? 'Enviar confirmação no WhatsApp' : 'Enviar no WhatsApp'
-      });
-      var idCampo = 'msg-' + s.id;
-      var campo = el('textarea', { id: idCampo, classe: 'adm-msg-campo', rows: '6' });
-      campo.value = texto;
-      campo.addEventListener('input', function () {
-        rascunhos[chave] = campo.value;
-        botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
-      });
-      info.push(el('div', { classe: 'adm-msg' }, [
-        el('div', { classe: 'adm-msg-topo' }, [
-          el('label', { 'for': idCampo, texto: 'Mensagem para ' + String(s.nome).split(' ')[0] + ' (pode editar antes de enviar)' }),
-          el('button', { type: 'button', classe: 'adm-msg-padrao', texto: 'Voltar ao padrão', onclick: function () {
-            delete rascunhos[chave];
-            campo.value = textoWhatsapp(s);
-            botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
-          } })
-        ]),
-        campo
-      ]));
-    }
-
-    var acoes = el('div', { classe: 'adm-sol-acoes' }, [
-      botaoWhats,
-      s.status !== 'cancelada' ? el('button', {
-        type: 'button', classe: 'botao' + (s.resolvido ? '' : ' botao-resolver'),
-        texto: s.resolvido ? 'Reabrir' : 'Marcar como resolvido',
-        onclick: function () { resolver(s, !s.resolvido); }
-      }) : null,
-      s.status === 'confirmada' && !fechada ? el('button', { type: 'button', classe: 'botao', texto: 'Trocar horário', onclick: function () { mudarStatus(s, 'nova'); } }) : null,
-      s.status !== 'cancelada' && !fechada ? el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () {
-        if (window.confirm('Cancelar a solicitação de ' + s.nome + '?' + (s.status === 'confirmada' ? ' O horário volta a ficar livre no site.' : ''))) mudarStatus(s, 'cancelada');
-      } }) : null,
-      s.status === 'cancelada' ? el('button', { type: 'button', classe: 'botao', texto: 'Reativar', onclick: function () { mudarStatus(s, 'nova'); } }) : null
-    ]);
-    return el('article', { classe: 'adm-cartao adm-sol ' + s.status + (fechada ? ' fechada' : '') }, [el('div', { classe: 'adm-sol-info' }, info), acoes]);
   }
 
-  function resolver(s, valor) {
-    chamar('resolver', { id: s.id, resolvido: valor }).then(function (resp) {
+  // Caixa de mensagem editável + link do WhatsApp que acompanha o texto.
+  function caixaMensagem(s, chave, padrao, rotuloBotao, aoClicar) {
+    var texto = rascunhos[chave] || padrao;
+    var botao = el('a', { classe: 'botao botao-whats', href: linkWhatsapp(s, texto), target: '_blank', rel: 'noopener', texto: rotuloBotao });
+    if (aoClicar) botao.addEventListener('click', aoClicar);
+    var idCampo = 'msg-' + chave.replace(/\W/g, '');
+    var campo = el('textarea', { id: idCampo, classe: 'adm-msg-campo', rows: '6' });
+    campo.value = texto;
+    campo.addEventListener('input', function () {
+      rascunhos[chave] = campo.value;
+      botao.setAttribute('href', linkWhatsapp(s, campo.value));
+    });
+    var bloco = el('div', { classe: 'adm-msg' }, [
+      el('div', { classe: 'adm-msg-topo' }, [
+        el('label', { 'for': idCampo, texto: 'Mensagem para ' + primeiroNome(s) + ' (pode editar antes de enviar)' }),
+        el('button', { type: 'button', classe: 'adm-msg-padrao', texto: 'Voltar ao padrão', onclick: function () {
+          delete rascunhos[chave];
+          campo.value = padrao;
+          botao.setAttribute('href', linkWhatsapp(s, padrao));
+        } })
+      ]),
+      campo
+    ]);
+    return { bloco: bloco, botao: botao };
+  }
+
+  function cartaoEscolher(s) {
+    var escolhida = escolhas[s.id] || 0;
+    var lista = el('div', { classe: 'adm-escolha', role: 'radiogroup', 'aria-label': 'Horário para oferecer a ' + s.nome });
+    s.opcoes.forEach(function (o, i) {
+      lista.appendChild(el('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(i === escolhida), classe: 'adm-escolha-item',
+        onclick: function () { escolhas[s.id] = i; delete rascunhos[s.id + ':proposta']; desenharSolicitacoes(); }
+      }, [
+        el('span', { classe: 'adm-escolha-marca', 'aria-hidden': 'true' }),
+        el('span', { classe: 'adm-escolha-texto' }, [el('strong', { texto: (i + 1) + 'ª sugestão' }), dataCurta(o.data) + ' às ' + o.horario])
+      ]));
+    });
+    var opcao = s.opcoes[escolhida];
+    var msg = caixaMensagem(s, s.id + ':proposta', textoProposta(s, opcao), 'Enviar proposta no WhatsApp', function () {
+      // O WhatsApp abre numa aba nova; aqui o pedido passa para "Aguardando resposta".
+      mudarStatus(s, 'aguardando', escolhida, 'Proposta enviada. O pedido foi para "Aguardando resposta".');
+    });
+    return el('article', { classe: 'adm-cartao adm-sol' }, [
+      cabecalho(s),
+      el('p', { classe: 'adm-passo', texto: 'Qual horário você quer oferecer?' }),
+      lista,
+      msg.bloco,
+      el('div', { classe: 'adm-sol-acoes' }, [
+        msg.botao,
+        el('button', { type: 'button', classe: 'botao', texto: 'Arquivar pedido', onclick: function () { resolver(s, true); } }),
+        botaoCancelar(s)
+      ])
+    ]);
+  }
+
+  function cartaoAguardando(s) {
+    var oferecido = { data: s.data, horario: s.horario };
+    var msg = caixaMensagem(s, s.id + ':proposta', textoProposta(s, oferecido), 'Reenviar proposta no WhatsApp');
+    return el('article', { classe: 'adm-cartao adm-sol' }, [
+      cabecalho(s),
+      el('p', { classe: 'adm-oferecido' }, ['Você ofereceu ', el('strong', { texto: dataCurta(s.data) + ' às ' + s.horario }), '. Quando ' + primeiroNome(s) + ' responder, registre aqui.']),
+      el('div', { classe: 'adm-sol-acoes' }, [
+        el('button', { type: 'button', classe: 'botao botao-rosa', texto: 'Paciente confirmou', onclick: function () {
+          mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Ela está em "Consultas confirmadas".');
+        } }),
+        el('button', { type: 'button', classe: 'botao', texto: 'Oferecer outro horário', onclick: function () { mudarStatus(s, 'nova', null, 'Escolha outro horário para oferecer.'); } }),
+        botaoCancelar(s)
+      ]),
+      el('details', { classe: 'adm-reenviar' }, [el('summary', { texto: 'Reenviar a proposta no WhatsApp' }), msg.bloco, msg.botao])
+    ]);
+  }
+
+  function cartaoConfirmada(s) {
+    var msg = caixaMensagem(s, s.id + ':confirmacao', textoConfirmacao(s), 'Enviar confirmação no WhatsApp');
+    var data = el('input', { type: 'date', min: hojeISO(), 'aria-label': 'Nova data' });
+    var hora = el('input', { type: 'time', step: '900', 'aria-label': 'Novo horário' });
+    data.value = s.data;
+    hora.value = s.horario;
+    var form = el('div', { classe: 'adm-remarcar', hidden: 'hidden' }, [
+      el('p', { texto: 'Nova data e horário:' }),
+      el('div', { classe: 'adm-novo' }, [data, hora, el('button', { type: 'button', classe: 'botao botao-rosa', texto: 'Salvar nova data', onclick: function () {
+        if (!data.value || !horaValida(hora.value)) { avisar('Escolha a nova data e o horário.'); return; }
+        remarcar(s, data.value, hora.value);
+      } })])
+    ]);
+    return el('article', { classe: 'adm-cartao adm-sol confirmada' }, [
+      cabecalho(s),
+      el('p', { classe: 'adm-sol-quando' }, [el('span', { classe: 'adm-status confirmada', texto: 'Confirmada' }), ' ' + dataCurta(s.data) + ' às ' + s.horario]),
+      msg.bloco,
+      el('div', { classe: 'adm-sol-acoes' }, [
+        msg.botao,
+        el('button', { type: 'button', classe: 'botao', texto: 'Remarcar', onclick: function () { form.hidden = !form.hidden; } }),
+        botaoCancelar(s)
+      ]),
+      form
+    ]);
+  }
+
+  function cartaoHistorico(s) {
+    var rotulo = s.status === 'cancelada' ? 'Cancelada' : s.status === 'confirmada' ? 'Consulta realizada' : 'Arquivado';
+    var quando = isoValido(s.data) ? dataCurta(s.data) + ' às ' + s.horario : s.opcoes.map(function (o) { return dataCurta(o.data) + ' ' + o.horario; }).join(' · ');
+    return el('article', { classe: 'adm-cartao adm-sol fechada' }, [
+      cabecalho(s),
+      el('p', {}, [el('span', { classe: 'adm-status ' + s.status, texto: rotulo }), ' ' + quando]),
+      s.status === 'confirmada' ? null : el('div', { classe: 'adm-sol-acoes' }, [
+        el('button', { type: 'button', classe: 'botao', texto: 'Reabrir', onclick: function () {
+          if (s.resolvido) resolver(s, false);
+          if (s.status === 'cancelada') mudarStatus(s, 'nova');
+        } })
+      ])
+    ]);
+  }
+
+  function isoValido(v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v)); }
+
+  function botaoCancelar(s) {
+    return el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () {
+      var reservado = s.status === 'confirmada' || s.status === 'aguardando';
+      if (window.confirm('Cancelar o pedido de ' + s.nome + '?' + (reservado ? ' O horário volta a ficar livre no site.' : ''))) mudarStatus(s, 'cancelada', null, 'Pedido cancelado.');
+    } });
+  }
+
+  function mudarStatus(s, status, opcao, mensagem) {
+    chamar('status', { id: s.id, status: status, opcao: opcao }).then(function (resp) {
+      if (resp.erro === 'conflito') { avisar('Esse horário já está reservado para ' + resp.com + '. Escolha outra opção.'); return; }
       if (!resp.ok) throw new Error(resp.erro);
-      avisar(valor ? 'Marcado como resolvido.' : 'Reaberto.', true);
+      avisar(mensagem || 'Atualizado.', true);
       return recarregar();
     }).catch(function (e) {
       if (e.message !== 'sessao') avisar('Não consegui atualizar. Tente de novo.');
     });
   }
 
-  function mudarStatus(s, status, opcao) {
-    chamar('status', { id: s.id, status: status, opcao: opcao }).then(function (resp) {
-      if (resp.erro === 'conflito') { avisar('Esse horário já está confirmado para ' + resp.com + '. Escolha outra opção.'); return; }
+  function remarcar(s, data, horario) {
+    chamar('remarcar', { id: s.id, data: data, horario: horario }).then(function (resp) {
+      if (resp.erro === 'conflito') { avisar('Esse horário já está reservado para ' + resp.com + '.'); return; }
+      if (resp.erro === 'passado') { avisar('Escolha uma data que ainda não passou.'); return; }
       if (!resp.ok) throw new Error(resp.erro);
-      avisar(status === 'confirmada' ? 'Confirmado. Agora é só mandar a confirmação no WhatsApp.' : 'Atualizado.', true);
+      delete rascunhos[s.id + ':confirmacao'];
+      avisar('Consulta remarcada. Envie a nova confirmação no WhatsApp.', true);
+      return recarregar();
+    }).catch(function (e) {
+      if (e.message !== 'sessao') avisar('Não consegui remarcar. Tente de novo.');
+    });
+  }
+
+  function resolver(s, valor) {
+    chamar('resolver', { id: s.id, resolvido: valor }).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.erro);
+      avisar(valor ? 'Pedido arquivado.' : 'Pedido reaberto.', true);
       return recarregar();
     }).catch(function (e) {
       if (e.message !== 'sessao') avisar('Não consegui atualizar. Tente de novo.');

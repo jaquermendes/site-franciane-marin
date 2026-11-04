@@ -149,3 +149,30 @@
 .adm-opcoes li.oferecida { border-color: var(--rosa); background: var(--rosa-claro); }
 .adm-opcao-acoes .botao[aria-pressed] { background: var(--branco); border: 1.5px solid var(--carvao); color: var(--carvao); }
 .adm-opcao-acoes .botao[aria-pressed="true"] { border-color: var(--rosa); color: var(--rosa); }
+
+/* Solicitações em etapas */
+.adm-etapa { display: flex; gap: 12px; align-items: flex-start; margin: 18px 0 2px; }
+.adm-etapa-num { width: 32px; height: 32px; flex: 0 0 auto; border-radius: 999px; background: var(--carvao); color: var(--branco); font-family: var(--display); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.adm-etapa h2 { font-size: 19px; }
+.adm-etapa p { font-size: 14px; color: var(--texto-suave); }
+.adm-sol-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.adm-sol-nome { font-family: var(--display); font-size: 18px; }
+.adm-passo { font-weight: 700; margin-top: 4px; }
+.adm-escolha { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.adm-escolha-item { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; border: 1.5px solid #D9CDD5; border-radius: 14px; background: var(--branco); color: var(--grafite); text-align: left; cursor: pointer; font-size: 15px; }
+.adm-escolha-item:hover { border-color: var(--rosa); }
+.adm-escolha-item[aria-checked="true"] { border: 2px solid var(--rosa); background: var(--rosa-claro); }
+.adm-escolha-marca { width: 22px; height: 22px; flex: 0 0 auto; border-radius: 999px; border: 2px solid #B9AAB4; background: var(--branco); }
+.adm-escolha-item[aria-checked="true"] .adm-escolha-marca { border-color: var(--rosa); box-shadow: inset 0 0 0 4px var(--branco); background: var(--rosa); }
+.adm-escolha-texto { display: flex; flex-direction: column; }
+.adm-escolha-texto strong { font-size: 12px; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .04em; }
+.adm-oferecido { padding: 12px 14px; border-radius: 12px; background: #FFF6DB; color: #5C4500; }
+.adm-oferecido strong { color: #3D2E00; }
+.adm-status.aguardando { background: #FFF1C9; color: #6B4E00; }
+.adm-reenviar summary, .adm-historico summary { cursor: pointer; font-weight: 600; color: var(--texto-suave); min-height: 36px; display: flex; align-items: center; }
+.adm-reenviar[open] { display: flex; flex-direction: column; gap: 8px; }
+.adm-reenviar .botao-whats { align-self: flex-start; }
+.adm-remarcar { padding-top: 12px; border-top: 1px solid var(--linha); display: flex; flex-direction: column; gap: 8px; }
+.adm-remarcar input { min-height: 44px; padding: 0 10px; border: 1.5px solid #D9CDD5; border-radius: 12px; font-size: 16px; }
+.adm-historico { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+.adm-sol-quando .adm-status { margin-right: 6px; vertical-align: 2px; }
