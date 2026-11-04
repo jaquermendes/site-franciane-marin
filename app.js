@@ -351,7 +351,26 @@
 
     enviar(dados).then(function (resp) {
       if (resp && resp.ok) {
-        $('ok-resumo').textContent = 'Consulta ' + formatoTexto() + '. ' + listaOpcoes('; ') + '. Em breve você recebe uma mensagem no ' + dados.telefoneExibicao + ' confirmando qual horário está disponível.';
+        var resumo = $('ok-resumo');
+        resumo.innerHTML = '';
+        var titulo = document.createElement('p');
+        titulo.className = 'ok-formato';
+        titulo.textContent = 'Consulta ' + formatoTexto() + ' · suas opções:';
+        var ol = document.createElement('ol');
+        ol.className = 'ok-opcoes';
+        estado.escolhidos.forEach(function (o, i) {
+          var li = document.createElement('li');
+          var n = document.createElement('strong');
+          n.textContent = (i + 1) + 'ª';
+          li.appendChild(n);
+          li.appendChild(document.createTextNode(' ' + dataPorExtenso(o.data) + ', às ' + o.horario));
+          ol.appendChild(li);
+        });
+        var aviso = document.createElement('p');
+        aviso.textContent = 'Em breve você recebe uma mensagem no ' + dados.telefoneExibicao + ' confirmando qual horário está disponível.';
+        resumo.appendChild(titulo);
+        resumo.appendChild(ol);
+        resumo.appendChild(aviso);
         var msg = 'Oi, Franciane! Meu nome é ' + dados.nome + '. Acabei de pedir pelo site uma consulta ' + formatoTexto() + ' com estas sugestões de horário:\n' + listaOpcoes('\n');
         $('ok-whats').href = 'https://wa.me/' + (CONFIG.whatsapp || '') + '?text=' + encodeURIComponent(msg);
         irPara(3);

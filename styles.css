@@ -314,3 +314,11 @@ button, input, select { font: inherit; }
 .particular-lista strong { font-family: var(--display); font-size: 17px; }
 .particular-lista span { color: var(--texto-claro); }
 @media (max-width: 760px) { .particular { padding: 22px 20px; } }
+
+/* Confirmação com as opções em lista */
+.ok-resumo { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.ok-resumo p { color: #E8E1E9; }
+.ok-formato { font-weight: 600; }
+.ok-opcoes { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.ok-opcoes li { padding: 10px 14px; border-radius: 12px; background: var(--carvao-3); color: var(--branco); }
+.ok-opcoes strong { display: inline-block; min-width: 28px; color: var(--rosa-suave); }
