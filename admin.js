@@ -131,7 +131,20 @@
   });
 
   function ocupadosDoDia(iso) {
-    return (estado.painel.solicitacoes || []).filter(function (s) { return s.data === iso && s.status !== 'cancelada'; });
+    return (estado.painel.solicitacoes || []).filter(function (s) { return s.data === iso && s.status === 'confirmada'; });
+  }
+
+  // Quem sugeriu cada horário do dia (só solicitações ainda não confirmadas).
+  function sugestoesDoDia(iso) {
+    var mapa = {};
+    (estado.painel.solicitacoes || []).forEach(function (s) {
+      if (s.status !== 'nova') return;
+      s.opcoes.forEach(function (o) {
+        if (o.data !== iso || s.modo !== estado.modo) return;
+        (mapa[o.horario] = mapa[o.horario] || []).push(s.nome.split(' ')[0]);
+      });
+    });
+    return mapa;
   }
 
   function desenharDias() {
@@ -157,6 +170,7 @@
     var info = dia[estado.modo];
     var formato = estado.modo === 'online' ? 'Online' : 'Presencial';
     var ocupados = ocupadosDoDia(dia.data);
+    var sugestoes = sugestoesDoDia(dia.data);
     var mapaOcupado = {};
     ocupados.forEach(function (s) { mapaOcupado[s.horario] = s; });
 
@@ -181,21 +195,23 @@
         return;
       }
       var livre = info.atual.indexOf(h) > -1;
+      var quem = sugestoes[h];
+      var legenda = (livre ? 'liberado' : 'bloqueado') + (quem ? ' · sugerido por ' + quem.join(', ') : '');
       grade.appendChild(el('button', {
-        type: 'button', classe: 'adm-horario', 'aria-pressed': String(livre),
-        'aria-label': h + (livre ? ', liberado' : ', bloqueado'),
+        type: 'button', classe: 'adm-horario' + (quem ? ' sugerido' : ''), 'aria-pressed': String(livre),
+        'aria-label': h + ', ' + legenda,
         onclick: function () {
           var nova = livre ? info.atual.filter(function (x) { return x !== h; }) : info.atual.concat([h]);
           salvarDia(dia, nova);
         }
-      }, [el('strong', { texto: h }), el('small', { texto: livre ? 'liberado' : 'bloqueado' })]));
+      }, [el('strong', { texto: h }), el('small', { texto: legenda })]));
     });
     caixa.appendChild(grade);
 
     caixa.appendChild(el('div', { classe: 'adm-legenda' }, [
       el('span', { classe: 'l-livre', texto: 'Liberado no site' }),
       el('span', { classe: 'l-bloq', texto: 'Bloqueado' }),
-      el('span', { classe: 'l-ocup', texto: 'Já solicitado' })
+      el('span', { classe: 'l-ocup', texto: 'Consulta confirmada' })
     ]));
 
     var entrada = el('input', { type: 'time', step: '900', 'aria-label': 'Novo horário' });
@@ -290,23 +306,36 @@
   });
 
   // ---------- Solicitações ----------
+  function textoOpcao(o) { return dataLonga(o.data).toLowerCase() + ', às ' + o.horario; }
+
+  function primeiraData(s) {
+    if (s.status === 'confirmada' && s.data) return s.data + ' ' + s.horario;
+    return s.opcoes.map(function (o) { return o.data + ' ' + o.horario; }).sort()[0] || '';
+  }
+
   function linkWhatsapp(s) {
     var formato = s.modo === 'online' ? 'online' : 'presencial';
-    var texto = (estado.painel.mensagemWhatsapp || '')
-      .replace(/\{nome\}/g, String(s.nome).split(' ')[0])
-      .replace(/\{formato\}/g, formato)
-      .replace(/\{dia\}/g, dataLonga(s.data).toLowerCase())
-      .replace(/\{hora\}/g, s.horario);
+    var nome = String(s.nome).split(' ')[0];
+    var texto;
+    if (s.status === 'confirmada') {
+      texto = 'Olá, ' + nome + '! Aqui é a Franciane Marin. Sua consulta ' + formato + ' está confirmada para ' + textoOpcao(s) + '. Qualquer dúvida, é só me chamar por aqui. Até lá!';
+    } else {
+      var lista = s.opcoes.map(textoOpcao);
+      var opcoes = lista.length > 1 ? lista.slice(0, -1).join('; ') + ' ou ' + lista[lista.length - 1] : lista[0];
+      texto = (estado.painel.mensagemWhatsapp || '')
+        .replace(/\{nome\}/g, nome)
+        .replace(/\{formato\}/g, formato)
+        .replace(/\{opcoes\}/g, opcoes);
+    }
     return 'https://wa.me/' + String(s.telefone).replace(/\D/g, '') + '?text=' + encodeURIComponent(texto);
   }
 
   function desenharSolicitacoes() {
     var caixa = $('lista-solicitacoes');
     caixa.innerHTML = '';
+    var ordem = { nova: 0, confirmada: 1, cancelada: 2 };
     var lista = (estado.painel.solicitacoes || []).slice().sort(function (a, b) {
-      var pa = a.status === 'cancelada' ? 1 : 0;
-      var pb = b.status === 'cancelada' ? 1 : 0;
-      return pa - pb || (a.data + a.horario).localeCompare(b.data + b.horario);
+      return (ordem[a.status] - ordem[b.status]) || primeiraData(a).localeCompare(primeiraData(b));
     });
     var novas = lista.filter(function (s) { return s.status === 'nova'; }).length;
     $('contador-novas').textContent = String(novas);
@@ -317,29 +346,45 @@
       return;
     }
     lista.forEach(function (s) {
-      var rotulo = { nova: 'Nova', confirmada: 'Confirmada', cancelada: 'Cancelada' }[s.status] || s.status;
+      var rotulo = { nova: 'Nova · escolha um horário', confirmada: 'Confirmada', cancelada: 'Cancelada' }[s.status] || s.status;
+      var info = [
+        el('span', { classe: 'adm-status ' + s.status, texto: rotulo }),
+        el('span', { classe: 'adm-sol-quem', texto: s.nome + ' · ' + (s.telefoneExibicao || s.telefone) + ' · ' + s.modo })
+      ];
+
+      if (s.status === 'confirmada') {
+        info.splice(1, 0, el('span', { classe: 'adm-sol-quando', texto: dataCurta(s.data) + ' às ' + s.horario }));
+      } else {
+        var opcoes = el('ol', { classe: 'adm-opcoes' });
+        s.opcoes.forEach(function (o, i) {
+          opcoes.appendChild(el('li', {}, [
+            el('span', {}, [el('strong', { texto: (i + 1) + 'ª opção ' }), dataCurta(o.data) + ' às ' + o.horario]),
+            s.status === 'nova' ? el('button', {
+              type: 'button', classe: 'botao botao-rosa', texto: 'Confirmar este',
+              'aria-label': 'Confirmar ' + dataCurta(o.data) + ' às ' + o.horario + ' para ' + s.nome,
+              onclick: function () { mudarStatus(s, 'confirmada', i); }
+            }) : null
+          ]));
+        });
+        info.splice(1, 0, opcoes);
+      }
+
       var acoes = el('div', { classe: 'adm-sol-acoes' }, [
-        s.status !== 'cancelada' ? el('a', { classe: 'botao botao-whats', href: linkWhatsapp(s), target: '_blank', rel: 'noopener', texto: 'Chamar no WhatsApp' }) : null,
-        s.status === 'nova' ? el('button', { type: 'button', classe: 'botao', texto: 'Marcar como confirmada', onclick: function () { mudarStatus(s, 'confirmada'); } }) : null,
+        s.status !== 'cancelada' ? el('a', { classe: 'botao botao-whats', href: linkWhatsapp(s), target: '_blank', rel: 'noopener', texto: s.status === 'confirmada' ? 'Mandar confirmação no WhatsApp' : 'Chamar no WhatsApp' }) : null,
+        s.status === 'confirmada' ? el('button', { type: 'button', classe: 'botao', texto: 'Trocar horário', onclick: function () { mudarStatus(s, 'nova'); } }) : null,
         s.status !== 'cancelada' ? el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () {
-          if (window.confirm('Cancelar a solicitação de ' + s.nome + '? O horário volta a ficar livre no site.')) mudarStatus(s, 'cancelada');
+          if (window.confirm('Cancelar a solicitação de ' + s.nome + '?' + (s.status === 'confirmada' ? ' O horário volta a ficar livre no site.' : ''))) mudarStatus(s, 'cancelada');
         } }) : el('button', { type: 'button', classe: 'botao', texto: 'Reativar', onclick: function () { mudarStatus(s, 'nova'); } })
       ]);
-      caixa.appendChild(el('article', { classe: 'adm-cartao adm-sol ' + s.status }, [
-        el('div', { classe: 'adm-sol-info' }, [
-          el('span', { classe: 'adm-status ' + s.status, texto: rotulo }),
-          el('span', { classe: 'adm-sol-quando', texto: dataCurta(s.data) + ' às ' + s.horario + ' · ' + s.modo }),
-          el('span', { classe: 'adm-sol-quem', texto: s.nome + ' · ' + (s.telefoneExibicao || s.telefone) })
-        ]),
-        acoes
-      ]));
+      caixa.appendChild(el('article', { classe: 'adm-cartao adm-sol ' + s.status }, [el('div', { classe: 'adm-sol-info' }, info), acoes]));
     });
   }
 
-  function mudarStatus(s, status) {
-    chamar('status', { id: s.id, status: status }).then(function (resp) {
+  function mudarStatus(s, status, opcao) {
+    chamar('status', { id: s.id, status: status, opcao: opcao }).then(function (resp) {
+      if (resp.erro === 'conflito') { avisar('Esse horário já está confirmado para ' + resp.com + '. Escolha outra opção.'); return; }
       if (!resp.ok) throw new Error(resp.erro);
-      avisar('Atualizado.', true);
+      avisar(status === 'confirmada' ? 'Confirmado. Agora é só mandar a confirmação no WhatsApp.' : 'Atualizado.', true);
       return recarregar();
     }).catch(function (e) {
       if (e.message !== 'sessao') avisar('Não consegui atualizar. Tente de novo.');

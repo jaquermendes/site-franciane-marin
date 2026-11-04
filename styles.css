@@ -88,14 +88,15 @@ button, input, select { font: inherit; }
 .nota-modo { margin-top: -6px; font-size: 14px; color: #CFC5D0; }
 .rotulo { font-size: 14px; font-weight: 600; color: #E8E1E9; margin-bottom: -6px; }
 .dias { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
-.dias button { min-height: 60px; padding: 8px 0; border-radius: 12px; border: 1.5px solid #4A414D; background: var(--carvao-3); color: var(--branco); cursor: pointer; text-align: center; }
+.dias button { position: relative; min-height: 60px; padding: 8px 0; border-radius: 12px; border: 1.5px solid #4A414D; background: var(--carvao-3); color: var(--branco); cursor: pointer; text-align: center; }
 .dias button span { display: block; font-size: 12px; opacity: .85; }
 .dias button strong { display: block; font-family: var(--display); font-size: 20px; }
 .dias button[aria-checked="true"] { background: var(--branco); color: var(--carvao); border-color: var(--branco); }
 .horarios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .horarios button { min-height: 44px; border-radius: 10px; border: 1.5px solid #6B6070; background: transparent; color: var(--branco); font-weight: 600; font-size: 15px; cursor: pointer; }
 .horarios button:hover { border-color: var(--branco); }
-.horarios button[aria-checked="true"] { background: var(--rosa); border-color: var(--rosa); }
+.horarios button { position: relative; }
+.horarios button[aria-pressed="true"] { background: var(--rosa); border-color: var(--rosa); }
 .carregando { font-size: 14px; color: #CFC5D0; }
 .botao-agenda { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding: 0 22px; border: 0; border-radius: 16px; background: var(--rosa); color: var(--branco); font-weight: 600; font-size: 17px; cursor: pointer; text-align: left; }
 .botao-agenda:hover:not(:disabled) { background: var(--rosa-escuro); }
@@ -285,3 +286,21 @@ button, input, select { font: inherit; }
 .rodape-redes a { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--carvao); border: 1px solid var(--linha); background: var(--branco); }
 .rodape-redes a:hover { color: var(--rosa); border-color: var(--rosa); }
 @media (max-width: 760px) { .insta { padding: 22px 20px; } .insta-botao { width: 100%; font-size: 14px; } }
+
+/* Até 3 sugestões */
+.dica-opcoes { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 14px; background: #3A2537; color: #F3DDEC; font-size: 14px; line-height: 1.45; }
+.dica-opcoes svg { flex: 0 0 auto; margin-top: 1px; color: var(--rosa-suave); }
+.dica-opcoes strong { color: var(--branco); }
+.rotulo-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: -6px; }
+.rotulo-linha .rotulo { margin-bottom: 0; }
+.contador-opcoes { font-size: 13px; font-weight: 700; color: var(--rosa-suave); }
+.marca-dia { position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--rosa); color: var(--branco); font-style: normal; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px var(--carvao); }
+.marca-opcao { position: absolute; top: -8px; right: -6px; padding: 1px 6px; border-radius: 999px; background: var(--branco); color: var(--rosa); font-style: normal; font-size: 11px; font-weight: 800; }
+.limite-opcoes { font-size: 13px; color: #FFB3CB; margin-top: -4px; }
+.escolhidos { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.escolhidos li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 6px 6px 14px; border-radius: 12px; background: var(--carvao-3); font-size: 14px; }
+.escolhidos strong { color: var(--rosa-suave); margin-right: 4px; }
+.escolhidos button { width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; color: #E8E1E9; font-size: 20px; cursor: pointer; }
+.escolhidos button:hover { background: #4A414D; color: var(--branco); }
+.resumo p { margin-bottom: 6px; }
+.resumo ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 2px; color: var(--rosa-suave); font-weight: 600; }

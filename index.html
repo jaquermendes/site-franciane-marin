@@ -89,27 +89,38 @@
           </div>
           <p class="nota-modo" id="nota-modo">Espaço Vida, Araraquara.</p>
 
-          <p class="rotulo" id="rotulo-dias">Escolha o dia</p>
+          <p class="dica-opcoes">
+            <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16v.01"/></svg>
+            <span>Escolha <strong>até 3 horários</strong> que funcionam para você, no mesmo dia ou em dias diferentes. A Franciane confirma qual está disponível.</span>
+          </p>
+
+          <p class="rotulo" id="rotulo-dias">Dia</p>
           <div class="dias" id="dias" role="radiogroup" aria-labelledby="rotulo-dias"></div>
 
-          <p class="rotulo" id="rotulo-horarios">Horários livres</p>
-          <div class="horarios" id="horarios" role="radiogroup" aria-labelledby="rotulo-horarios"></div>
+          <div class="rotulo-linha">
+            <p class="rotulo" id="rotulo-horarios">Horários livres</p>
+            <span class="contador-opcoes" id="contador-opcoes" aria-live="polite">0 de 3</span>
+          </div>
+          <div class="horarios" id="horarios" role="group" aria-labelledby="rotulo-horarios"></div>
           <p class="carregando" id="estado-horarios" hidden></p>
+          <p class="limite-opcoes" id="limite-opcoes" role="status" hidden>Você já escolheu 3 opções. Tire uma para trocar.</p>
+
+          <ol class="escolhidos" id="escolhidos" aria-label="Suas opções" hidden></ol>
 
           <button type="button" class="botao-agenda" id="continuar" disabled>
-            <span id="continuar-texto">Escolha um horário</span>
+            <span id="continuar-texto">Escolha de 1 a 3 horários</span>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
-          <p class="aviso-leve">Você solicita o horário e a Franciane confirma pelo WhatsApp.</p>
+          <p class="aviso-leve">São sugestões: nada fica reservado até a Franciane confirmar pelo WhatsApp.</p>
         </div>
 
         <!-- Etapa 2: dados de contato -->
         <div class="etapa" data-etapa="2" hidden>
           <button type="button" class="voltar" id="voltar">
             <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
-            Trocar horário
+            Trocar horários
           </button>
-          <p class="resumo" id="resumo"></p>
+          <div class="resumo" id="resumo"></div>
 
           <div class="campo">
             <label for="nome">Seu nome</label>
@@ -143,10 +154,10 @@
           </div>
 
           <button type="submit" class="botao-agenda" id="enviar">
-            <span>Solicitar este horário</span>
+            <span>Enviar minhas sugestões</span>
             <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </button>
-          <p class="aviso-leve">Nada é cobrado agora. A Franciane te chama no WhatsApp para confirmar o horário e passar os valores. Pagamento por Pix.</p>
+          <p class="aviso-leve">Nada é cobrado agora. A Franciane te chama no WhatsApp para confirmar qual horário está disponível e passar os valores. Pagamento por Pix.</p>
           <p class="aviso-dados">Seus dados são usados só para o contato sobre a consulta.</p>
         </div>
 
@@ -352,7 +363,7 @@
   <section id="perguntas" class="container secao perguntas">
     <h2>Antes de marcar</h2>
     <div class="lista-perguntas">
-      <details><summary>Como funciona o agendamento?</summary><p>Você escolhe o formato, o dia e o horário e envia uma solicitação com seu nome e WhatsApp. A Franciane te chama para confirmar se o horário está mantido, passar os valores e combinar o pagamento.</p></details>
+      <details><summary>Como funciona o agendamento?</summary><p>Você escolhe o formato e sugere até 3 horários que funcionam para você, com seu nome e WhatsApp. A Franciane te chama para confirmar qual deles está disponível, passar os valores e combinar o pagamento.</p></details>
       <details><summary>Quanto custa a consulta?</summary><p>Os valores e as opções, consulta avulsa ou com retorno em 15 dias, eu envio pelo <a href="https://wa.me/5516997498570" target="_blank" rel="noopener">WhatsApp</a>, junto com a confirmação do horário.</p></details>
       <details><summary>Como é o pagamento?</summary><p>Por Pix, combinado direto comigo pelo WhatsApp depois da sua solicitação. Nada é cobrado no site.</p></details>
       <details><summary>A consulta online funciona igual?</summary><p>O plano, a lista de substituições e o suporte no WhatsApp são os mesmos. A avaliação antropométrica completa é feita no presencial. Os horários do online são diferentes dos presenciais.</p></details>

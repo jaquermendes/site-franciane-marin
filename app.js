@@ -7,7 +7,9 @@
   var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   var DDDS = [11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 24, 27, 28, 31, 32, 33, 34, 35, 37, 38, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69, 71, 73, 74, 75, 77, 79, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99];
 
-  var estado = { modo: 'presencial', dias: { presencial: null, online: null }, diaIdx: 0, horario: null, enviando: false };
+  var MAX_OPCOES = 3;
+  // escolhidos: { data, horario } na ordem em que a pessoa tocou (1ª, 2ª, 3ª opção).
+  var estado = { modo: 'presencial', dias: { presencial: null, online: null }, diaIdx: 0, escolhidos: [], enviando: false };
 
   var $ = function (id) { return document.getElementById(id); };
   var form = $('form-agenda');
@@ -24,6 +26,9 @@
   var elTelefone = $('telefone');
   var elNome = $('nome');
   var elEnviar = $('enviar');
+  var elEscolhidos = $('escolhidos');
+  var elContador = $('contador-opcoes');
+  var elLimite = $('limite-opcoes');
 
   // ---------- Datas ----------
   function paraISO(d) {
@@ -32,6 +37,10 @@
   function deISO(iso) {
     var p = iso.split('-');
     return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function dataCurta(iso) {
+    var d = deISO(iso);
+    return DIAS_CURTOS[d.getDay()].toLowerCase() + ', ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
   }
   function dataPorExtenso(iso) {
     var d = deISO(iso);
@@ -84,22 +93,28 @@
     });
   }
 
+  function posicao(data, horario) {
+    for (var i = 0; i < estado.escolhidos.length; i++) {
+      if (estado.escolhidos[i].data === data && estado.escolhidos[i].horario === horario) return i;
+    }
+    return -1;
+  }
+
   function desenharDias(dias) {
     elDias.innerHTML = '';
     dias.forEach(function (dia, i) {
       var d = deISO(dia.data);
+      var marcados = estado.escolhidos.filter(function (o) { return o.data === dia.data; }).length;
       var b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('role', 'radio');
       b.setAttribute('aria-checked', String(i === estado.diaIdx));
-      b.setAttribute('aria-label', dataPorExtenso(dia.data));
-      b.innerHTML = '<span>' + DIAS_CURTOS[d.getDay()] + '</span><strong>' + d.getDate() + '</strong>';
+      b.setAttribute('aria-label', dataPorExtenso(dia.data) + (marcados ? ', ' + marcados + ' escolhido' + (marcados > 1 ? 's' : '') : ''));
+      b.innerHTML = '<span>' + DIAS_CURTOS[d.getDay()] + '</span><strong>' + d.getDate() + '</strong>' + (marcados ? '<i class="marca-dia" aria-hidden="true">' + marcados + '</i>' : '');
       b.addEventListener('click', function () {
         estado.diaIdx = i;
-        estado.horario = null;
         desenharDias(dias);
         desenharHorarios(dia);
-        atualizarBotao();
       });
       elDias.appendChild(b);
     });
@@ -108,35 +123,63 @@
   function desenharHorarios(dia) {
     elHorarios.innerHTML = '';
     dia.horarios.forEach(function (h) {
+      var pos = posicao(dia.data, h);
       var b = document.createElement('button');
       b.type = 'button';
-      b.setAttribute('role', 'radio');
-      b.setAttribute('aria-checked', String(h === estado.horario));
-      b.textContent = h;
-      b.addEventListener('click', function () {
-        estado.horario = h;
-        desenharHorarios(dia);
-        atualizarBotao();
-      });
+      b.setAttribute('aria-pressed', String(pos > -1));
+      b.setAttribute('aria-label', h + (pos > -1 ? ', ' + (pos + 1) + 'ª opção' : ''));
+      b.innerHTML = h + (pos > -1 ? '<i class="marca-opcao" aria-hidden="true">' + (pos + 1) + 'ª</i>' : '');
+      b.addEventListener('click', function () { alternar(dia, h); });
       elHorarios.appendChild(b);
     });
   }
 
-  function diaAtual() {
+  function alternar(dia, h) {
+    var pos = posicao(dia.data, h);
+    if (pos > -1) {
+      estado.escolhidos.splice(pos, 1);
+    } else if (estado.escolhidos.length >= MAX_OPCOES) {
+      elLimite.hidden = false;
+      return;
+    } else {
+      estado.escolhidos.push({ data: dia.data, horario: h });
+    }
+    redesenhar();
+  }
+
+  function redesenhar() {
     var dias = estado.dias[estado.modo] || [];
-    return dias[estado.diaIdx];
+    if (dias.length) {
+      desenharDias(dias);
+      desenharHorarios(dias[estado.diaIdx]);
+    }
+    desenharEscolhidos();
+    atualizarBotao();
+  }
+
+  function desenharEscolhidos() {
+    var n = estado.escolhidos.length;
+    elContador.textContent = n + ' de ' + MAX_OPCOES;
+    elEscolhidos.innerHTML = '';
+    elEscolhidos.hidden = !n;
+    if (n < MAX_OPCOES) elLimite.hidden = true;
+    estado.escolhidos.forEach(function (o, i) {
+      var li = document.createElement('li');
+      li.innerHTML = '<span><strong>' + (i + 1) + 'ª opção</strong> ' + dataCurta(o.data) + ' às ' + o.horario + '</span>';
+      var tirar = document.createElement('button');
+      tirar.type = 'button';
+      tirar.setAttribute('aria-label', 'Tirar ' + (i + 1) + 'ª opção');
+      tirar.textContent = '×';
+      tirar.addEventListener('click', function () { estado.escolhidos.splice(i, 1); redesenhar(); });
+      li.appendChild(tirar);
+      elEscolhidos.appendChild(li);
+    });
   }
 
   function atualizarBotao() {
-    var dia = diaAtual();
-    if (dia && estado.horario) {
-      var d = deISO(dia.data);
-      elContinuar.disabled = false;
-      elContinuarTexto.textContent = 'Continuar com ' + DIAS_CURTOS[d.getDay()].toLowerCase() + ' ' + d.getDate() + ' às ' + estado.horario;
-    } else {
-      elContinuar.disabled = true;
-      elContinuarTexto.textContent = 'Escolha um horário';
-    }
+    var n = estado.escolhidos.length;
+    elContinuar.disabled = !n;
+    elContinuarTexto.textContent = n ? 'Continuar com ' + n + (n > 1 ? ' opções' : ' opção') : 'Escolha de 1 a 3 horários';
   }
 
   // ---------- Etapas ----------
@@ -144,10 +187,12 @@
     etapas.forEach(function (el) { el.hidden = el.getAttribute('data-etapa') !== String(n); });
   }
 
-  function textoResumo() {
-    var dia = diaAtual();
-    var formato = estado.modo === 'online' ? 'Consulta online' : 'Consulta presencial';
-    return formato + ' · ' + dataPorExtenso(dia.data) + ' · ' + estado.horario;
+  function formatoTexto() { return estado.modo === 'online' ? 'online' : 'presencial'; }
+
+  function listaOpcoes(sep) {
+    return estado.escolhidos.map(function (o, i) {
+      return (i + 1) + 'ª opção: ' + dataPorExtenso(o.data) + ', às ' + o.horario;
+    }).join(sep);
   }
 
   // ---------- Formato ----------
@@ -157,18 +202,30 @@
       if (modo === estado.modo) return;
       estado.modo = modo;
       estado.diaIdx = 0;
-      estado.horario = null;
+      estado.escolhidos = [];
       form.querySelectorAll('.formato button').forEach(function (o) {
         o.setAttribute('aria-checked', String(o === b));
       });
       elNota.textContent = (CONFIG.notas || {})[modo] || '';
+      desenharEscolhidos();
       atualizarHorarios();
     });
   });
 
   elContinuar.addEventListener('click', function () {
     if (elContinuar.disabled) return;
-    $('resumo').innerHTML = '<strong>' + textoResumo() + '</strong>';
+    var r = $('resumo');
+    r.innerHTML = '';
+    var t = document.createElement('p');
+    t.innerHTML = '<strong>Consulta ' + formatoTexto() + '</strong> · suas sugestões de horário:';
+    var ol = document.createElement('ol');
+    estado.escolhidos.forEach(function (o) {
+      var li = document.createElement('li');
+      li.textContent = dataPorExtenso(o.data) + ', às ' + o.horario;
+      ol.appendChild(li);
+    });
+    r.appendChild(t);
+    r.appendChild(ol);
     irPara(2);
     elNome.focus();
   });
@@ -179,10 +236,11 @@
   });
 
   $('nova').addEventListener('click', function () {
-    estado.horario = null;
+    estado.escolhidos = [];
     form.reset();
     elCodigoOutro.hidden = true;
     limparErros();
+    desenharEscolhidos();
     irPara(1);
     atualizarHorarios(true);
   });
@@ -276,14 +334,12 @@
     if (!nomeOk) { elNome.focus(); return; }
     if (!telOk) { elTelefone.focus(); return; }
 
-    var dia = diaAtual();
     var codigo = codigoPais();
     var digitos = soDigitos(elTelefone.value);
     var dados = {
       acao: 'solicitar',
       modo: estado.modo,
-      data: dia.data,
-      horario: estado.horario,
+      opcoes: estado.escolhidos.slice(),
       nome: elNome.value.trim(),
       telefone: '+' + codigo + digitos,
       telefoneExibicao: '+' + codigo + ' ' + (codigo === '55' ? mascaraBrasil(digitos) : digitos)
@@ -295,8 +351,8 @@
 
     enviar(dados).then(function (resp) {
       if (resp && resp.ok) {
-        $('ok-resumo').textContent = textoResumo() + '. Em breve você recebe uma mensagem no ' + dados.telefoneExibicao + '.';
-        var msg = 'Oi, Franciane! Meu nome é ' + dados.nome + '. Acabei de solicitar pelo site uma consulta ' + (estado.modo === 'online' ? 'online' : 'presencial') + ' para ' + dataPorExtenso(dia.data) + ', às ' + estado.horario + '.';
+        $('ok-resumo').textContent = 'Consulta ' + formatoTexto() + '. ' + listaOpcoes('; ') + '. Em breve você recebe uma mensagem no ' + dados.telefoneExibicao + ' confirmando qual horário está disponível.';
+        var msg = 'Oi, Franciane! Meu nome é ' + dados.nome + '. Acabei de pedir pelo site uma consulta ' + formatoTexto() + ' com estas sugestões de horário:\n' + listaOpcoes('\n');
         $('ok-whats').href = 'https://wa.me/' + (CONFIG.whatsapp || '') + '?text=' + encodeURIComponent(msg);
         irPara(3);
         form.querySelector('[data-etapa="3"]').focus();
@@ -304,9 +360,11 @@
         return;
       }
       if (resp && resp.erro === 'ocupado') {
-        alert('Esse horário acabou de ser reservado por outra pessoa. Escolha outro, por favor.');
-        estado.horario = null;
+        var fora = (resp.indisponiveis || []).map(function (o) { return o.data + ' ' + o.horario; });
+        estado.escolhidos = estado.escolhidos.filter(function (o) { return fora.indexOf(o.data + ' ' + o.horario) === -1; });
+        alert('Um dos horários escolhidos acabou de ser fechado. Tirei ele da sua lista: confira e, se quiser, escolha outro.');
         irPara(1);
+        desenharEscolhidos();
         atualizarHorarios(true);
         return;
       }
@@ -316,11 +374,12 @@
     }).then(function () {
       estado.enviando = false;
       elEnviar.removeAttribute('aria-busy');
-      elEnviar.querySelector('span').textContent = 'Solicitar este horário';
+      elEnviar.querySelector('span').textContent = 'Enviar minhas sugestões';
     });
   });
 
   // ---------- Início ----------
   elNota.textContent = (CONFIG.notas || {}).presencial || '';
+  desenharEscolhidos();
   atualizarHorarios();
 })();
