@@ -369,8 +369,9 @@
     var escolher = todas.filter(function (s) { return s.status === 'nova' && !s.resolvido; }).sort(porChegada);
     var aguardando = todas.filter(function (s) { return s.status === 'aguardando' && !s.resolvido; }).sort(porChegada);
     var confirmadas = todas.filter(function (s) { return s.status === 'confirmada' && s.data >= hoje; }).sort(porData);
+    var canceladas = todas.filter(function (s) { return s.status === 'cancelada'; }).sort(porChegada).reverse();
     var historico = todas.filter(function (s) {
-      return s.status === 'cancelada' || (s.resolvido && s.status !== 'confirmada') || (s.status === 'confirmada' && s.data < hoje);
+      return s.status !== 'cancelada' && ((s.resolvido && s.status !== 'confirmada') || (s.status === 'confirmada' && s.data < hoje));
     }).sort(porChegada).reverse();
 
     var pendentes = escolher.length + aguardando.length;
@@ -381,11 +382,16 @@
     grupo(caixa, '2', 'Aguardando resposta', 'Você já ofereceu um horário. Ele fica reservado até a paciente responder.', aguardando, cartaoAguardando);
     grupo(caixa, '3', 'Consultas confirmadas', 'Próximas consultas. Dá para reenviar a confirmação, remarcar ou cancelar.', confirmadas, cartaoConfirmada);
 
-    if (historico.length) {
-      var det = el('details', { classe: 'adm-historico' }, [el('summary', { texto: 'Histórico dos últimos 30 dias (' + historico.length + ')' })]);
-      historico.forEach(function (s) { det.appendChild(cartaoHistorico(s)); });
-      caixa.appendChild(det);
-    }
+    // Canceladas e histórico ficam fechados e em linhas curtas, para não ocupar espaço.
+    listaCompacta(caixa, 'Canceladas (' + canceladas.length + ')', canceladas);
+    listaCompacta(caixa, 'Arquivados e consultas realizadas (' + historico.length + ')', historico);
+  }
+
+  function listaCompacta(caixa, titulo, lista) {
+    if (!lista.length) return;
+    var ul = el('ul', { classe: 'adm-linhas' });
+    lista.forEach(function (s) { ul.appendChild(cartaoHistorico(s)); });
+    caixa.appendChild(el('details', { classe: 'adm-historico' }, [el('summary', { texto: titulo }), ul]));
   }
 
   function grupo(caixa, numero, titulo, ajuda, lista, desenhar) {
@@ -507,15 +513,16 @@
   function cartaoHistorico(s) {
     var rotulo = s.status === 'cancelada' ? 'Cancelada' : s.status === 'confirmada' ? 'Consulta realizada' : 'Arquivado';
     var quando = isoValido(s.data) ? dataCurta(s.data) + ' às ' + s.horario : s.opcoes.map(function (o) { return dataCurta(o.data) + ' ' + o.horario; }).join(' · ');
-    return el('article', { classe: 'adm-cartao adm-sol fechada' }, [
-      cabecalho(s),
-      el('p', {}, [el('span', { classe: 'adm-status ' + s.status, texto: rotulo }), ' ' + quando]),
-      s.status === 'confirmada' ? null : el('div', { classe: 'adm-sol-acoes' }, [
-        el('button', { type: 'button', classe: 'botao', texto: 'Reabrir', onclick: function () {
+    return el('li', { classe: 'adm-linha' }, [
+      el('span', { classe: 'adm-linha-texto' }, [el('strong', { texto: s.nome }), ' · ' + quando + ' · ', el('span', { classe: 'adm-linha-rotulo', texto: rotulo })]),
+      s.status === 'confirmada' ? null : el('button', {
+        type: 'button', classe: 'botao', texto: s.status === 'cancelada' ? 'Reativar' : 'Reabrir',
+        'aria-label': (s.status === 'cancelada' ? 'Reativar' : 'Reabrir') + ' o pedido de ' + s.nome,
+        onclick: function () {
           if (s.resolvido) resolver(s, false);
-          if (s.status === 'cancelada') mudarStatus(s, 'nova');
-        } })
-      ])
+          if (s.status === 'cancelada') mudarStatus(s, 'nova', null, 'Pedido reativado. Ele voltou para "Escolher horário".');
+        }
+      })
     ]);
   }
 
