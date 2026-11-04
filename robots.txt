@@ -3,3 +3,4 @@ Allow: /
 Disallow: /admin/
 
 Sitemap: https://www.francianemarin.com.br/sitemap.xml
+Disallow: /avaliar/
