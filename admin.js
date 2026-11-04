@@ -346,7 +346,7 @@
       texto = 'Olá, ' + nome + '! Aqui é a Franciane Marin. Sua consulta ' + formato + ' está confirmada para ' + textoOpcao(s) + '. Qualquer dúvida, é só me chamar por aqui. Até lá!';
     } else {
       var proposta = s.opcoes[propostas[s.id] || 0] || s.opcoes[0];
-      texto = (estado.painel.mensagemWhatsapp || '')
+      texto = (estado.painel.mensagemProposta || estado.painel.mensagemWhatsapp || '')
         .replace(/\{nome\}/g, nome)
         .replace(/\{formato\}/g, formato)
         .replace(/\{proposta\}/g, proposta ? comArtigo(proposta) : '');
