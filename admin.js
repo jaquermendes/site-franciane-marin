@@ -350,8 +350,7 @@
       'Quer se preparar melhor para a consulta? Separei algumas dicas aqui:',
       'https://www.francianemarin.com.br/#preparo',
       '',
-      'Qualquer dúvida, é só me chamar por aqui. Até lá!',
-      'Franciane Marin · Nutricionista'
+      'Qualquer dúvida, é só me chamar por aqui. Até lá!'
     ].join('\n');
   }
 
