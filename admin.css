@@ -134,3 +134,12 @@
 .adm-msg-padrao:hover { text-decoration: underline; }
 .adm-msg-campo { width: 100%; min-height: 140px; padding: 12px 14px; border: 1.5px solid #D9CDD5; border-radius: 12px; font: inherit; font-size: 15px; line-height: 1.5; color: var(--grafite); background: #FFFDFE; resize: vertical; }
 .adm-msg-campo:focus { border-color: var(--rosa); outline: none; }
+
+/* Grupos e resolvido */
+.adm-grupo { font-size: 18px; margin: 8px 0 -2px; }
+.adm-selos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.adm-chegada { font-size: 12px; color: var(--texto-suave); }
+.adm-status.resolvido { background: #E6E1F5; color: #43337A; }
+.adm-sol.fechada { opacity: .7; }
+.adm-sol.fechada:hover { opacity: 1; }
+.adm-sol-acoes .botao-resolver { border-color: #43337A; color: #43337A; }

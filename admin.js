@@ -348,80 +348,114 @@
     return texto;
   }
 
+  function chegada(s) {
+    var d = new Date(s.criadoEm);
+    if (isNaN(d)) return '';
+    return 'Chegou em ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') +
+      ' às ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
   function desenharSolicitacoes() {
     var caixa = $('lista-solicitacoes');
     caixa.innerHTML = '';
-    var ordem = { nova: 0, confirmada: 1, cancelada: 2 };
-    var lista = (estado.painel.solicitacoes || []).slice().sort(function (a, b) {
-      return (ordem[a.status] - ordem[b.status]) || primeiraData(a).localeCompare(primeiraData(b));
+    // Ordem de chegada: quem pediu primeiro aparece primeiro.
+    var todas = (estado.painel.solicitacoes || []).slice().sort(function (a, b) {
+      return String(a.criadoEm).localeCompare(String(b.criadoEm));
     });
-    var novas = lista.filter(function (s) { return s.status === 'nova'; }).length;
-    $('contador-novas').textContent = String(novas);
-    $('contador-novas').hidden = !novas;
+    var abertas = todas.filter(function (s) { return !s.resolvido && s.status !== 'cancelada'; });
+    var fechadas = todas.filter(function (s) { return s.resolvido || s.status === 'cancelada'; }).reverse();
+    $('contador-novas').textContent = String(abertas.length);
+    $('contador-novas').hidden = !abertas.length;
 
-    if (!lista.length) {
-      caixa.appendChild(el('p', { classe: 'adm-cartao adm-vazio', texto: 'Nenhuma solicitação para os próximos dias.' }));
-      return;
+    caixa.appendChild(el('p', { classe: 'adm-explica', texto: 'Pedidos dos últimos 30 dias, em ordem de chegada.' }));
+    caixa.appendChild(el('h2', { classe: 'adm-grupo', texto: 'A responder (' + abertas.length + ')' }));
+    if (!abertas.length) caixa.appendChild(el('p', { classe: 'adm-cartao adm-vazio', texto: 'Tudo respondido por aqui.' }));
+    abertas.forEach(function (s) { caixa.appendChild(cartao(s)); });
+
+    if (fechadas.length) {
+      caixa.appendChild(el('h2', { classe: 'adm-grupo', texto: 'Resolvidas e canceladas (' + fechadas.length + ')' }));
+      fechadas.forEach(function (s) { caixa.appendChild(cartao(s)); });
     }
-    lista.forEach(function (s) {
-      var rotulo = { nova: 'Nova · escolha um horário', confirmada: 'Confirmada', cancelada: 'Cancelada' }[s.status] || s.status;
-      var info = [
-        el('span', { classe: 'adm-status ' + s.status, texto: rotulo }),
-        el('span', { classe: 'adm-sol-quem', texto: s.nome + ' · ' + (s.telefoneExibicao || s.telefone) + ' · ' + s.modo })
-      ];
+  }
 
-      if (s.status === 'confirmada') {
-        info.splice(1, 0, el('span', { classe: 'adm-sol-quando', texto: dataCurta(s.data) + ' às ' + s.horario }));
-      } else {
-        var opcoes = el('ol', { classe: 'adm-opcoes' });
-        s.opcoes.forEach(function (o, i) {
-          opcoes.appendChild(el('li', {}, [
-            el('span', {}, [el('strong', { texto: (i + 1) + 'ª opção ' }), dataCurta(o.data) + ' às ' + o.horario]),
-            s.status === 'nova' ? el('button', {
-              type: 'button', classe: 'botao botao-rosa', texto: 'Confirmar este',
-              'aria-label': 'Confirmar ' + dataCurta(o.data) + ' às ' + o.horario + ' para ' + s.nome,
-              onclick: function () { mudarStatus(s, 'confirmada', i); }
-            }) : null
-          ]));
-        });
-        info.splice(1, 0, opcoes);
-      }
+  function cartao(s) {
+    var fechada = s.resolvido || s.status === 'cancelada';
+    var rotulo = { nova: 'Nova · escolha um horário', confirmada: 'Confirmada', cancelada: 'Cancelada' }[s.status] || s.status;
+    var selos = el('div', { classe: 'adm-selos' }, [
+      el('span', { classe: 'adm-status ' + s.status, texto: rotulo }),
+      s.resolvido ? el('span', { classe: 'adm-status resolvido', texto: 'Resolvido' }) : null,
+      el('span', { classe: 'adm-chegada', texto: chegada(s) })
+    ]);
+    var info = [selos, el('span', { classe: 'adm-sol-quem', texto: s.nome + ' · ' + (s.telefoneExibicao || s.telefone) + ' · ' + s.modo })];
 
+    if (s.status === 'confirmada') {
+      info.splice(1, 0, el('span', { classe: 'adm-sol-quando', texto: dataCurta(s.data) + ' às ' + s.horario }));
+    } else {
+      var opcoes = el('ol', { classe: 'adm-opcoes' });
+      s.opcoes.forEach(function (o, i) {
+        opcoes.appendChild(el('li', {}, [
+          el('span', {}, [el('strong', { texto: (i + 1) + 'ª opção ' }), dataCurta(o.data) + ' às ' + o.horario]),
+          s.status === 'nova' && !fechada ? el('button', {
+            type: 'button', classe: 'botao botao-rosa', texto: 'Confirmar este',
+            'aria-label': 'Confirmar ' + dataCurta(o.data) + ' às ' + o.horario + ' para ' + s.nome,
+            onclick: function () { mudarStatus(s, 'confirmada', i); }
+          }) : null
+        ]));
+      });
+      info.splice(1, 0, opcoes);
+    }
+
+    var botaoWhats = null;
+    if (!fechada) {
       var chave = s.id + ':' + s.status;
       var texto = rascunhos[chave] || textoWhatsapp(s);
-      var botaoWhats = s.status !== 'cancelada' ? el('a', {
+      botaoWhats = el('a', {
         classe: 'botao botao-whats', href: linkWhatsapp(s, texto), target: '_blank', rel: 'noopener',
         texto: s.status === 'confirmada' ? 'Enviar confirmação no WhatsApp' : 'Enviar no WhatsApp'
-      }) : null;
-      if (botaoWhats) {
-        var idCampo = 'msg-' + s.id;
-        var campo = el('textarea', { id: idCampo, classe: 'adm-msg-campo', rows: '6' });
-        campo.value = texto;
-        campo.addEventListener('input', function () {
-          rascunhos[chave] = campo.value;
-          botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
-        });
-        info.push(el('div', { classe: 'adm-msg' }, [
-          el('div', { classe: 'adm-msg-topo' }, [
-            el('label', { 'for': idCampo, texto: 'Mensagem para ' + String(s.nome).split(' ')[0] + ' (pode editar antes de enviar)' }),
-            el('button', { type: 'button', classe: 'adm-msg-padrao', texto: 'Voltar ao padrão', onclick: function () {
-              delete rascunhos[chave];
-              campo.value = textoWhatsapp(s);
-              botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
-            } })
-          ]),
-          campo
-        ]));
-      }
+      });
+      var idCampo = 'msg-' + s.id;
+      var campo = el('textarea', { id: idCampo, classe: 'adm-msg-campo', rows: '6' });
+      campo.value = texto;
+      campo.addEventListener('input', function () {
+        rascunhos[chave] = campo.value;
+        botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
+      });
+      info.push(el('div', { classe: 'adm-msg' }, [
+        el('div', { classe: 'adm-msg-topo' }, [
+          el('label', { 'for': idCampo, texto: 'Mensagem para ' + String(s.nome).split(' ')[0] + ' (pode editar antes de enviar)' }),
+          el('button', { type: 'button', classe: 'adm-msg-padrao', texto: 'Voltar ao padrão', onclick: function () {
+            delete rascunhos[chave];
+            campo.value = textoWhatsapp(s);
+            botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
+          } })
+        ]),
+        campo
+      ]));
+    }
 
-      var acoes = el('div', { classe: 'adm-sol-acoes' }, [
-        botaoWhats,
-        s.status === 'confirmada' ? el('button', { type: 'button', classe: 'botao', texto: 'Trocar horário', onclick: function () { mudarStatus(s, 'nova'); } }) : null,
-        s.status !== 'cancelada' ? el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () {
-          if (window.confirm('Cancelar a solicitação de ' + s.nome + '?' + (s.status === 'confirmada' ? ' O horário volta a ficar livre no site.' : ''))) mudarStatus(s, 'cancelada');
-        } }) : el('button', { type: 'button', classe: 'botao', texto: 'Reativar', onclick: function () { mudarStatus(s, 'nova'); } })
-      ]);
-      caixa.appendChild(el('article', { classe: 'adm-cartao adm-sol ' + s.status }, [el('div', { classe: 'adm-sol-info' }, info), acoes]));
+    var acoes = el('div', { classe: 'adm-sol-acoes' }, [
+      botaoWhats,
+      s.status !== 'cancelada' ? el('button', {
+        type: 'button', classe: 'botao' + (s.resolvido ? '' : ' botao-resolver'),
+        texto: s.resolvido ? 'Reabrir' : 'Marcar como resolvido',
+        onclick: function () { resolver(s, !s.resolvido); }
+      }) : null,
+      s.status === 'confirmada' && !fechada ? el('button', { type: 'button', classe: 'botao', texto: 'Trocar horário', onclick: function () { mudarStatus(s, 'nova'); } }) : null,
+      s.status !== 'cancelada' && !fechada ? el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () {
+        if (window.confirm('Cancelar a solicitação de ' + s.nome + '?' + (s.status === 'confirmada' ? ' O horário volta a ficar livre no site.' : ''))) mudarStatus(s, 'cancelada');
+      } }) : null,
+      s.status === 'cancelada' ? el('button', { type: 'button', classe: 'botao', texto: 'Reativar', onclick: function () { mudarStatus(s, 'nova'); } }) : null
+    ]);
+    return el('article', { classe: 'adm-cartao adm-sol ' + s.status + (fechada ? ' fechada' : '') }, [el('div', { classe: 'adm-sol-info' }, info), acoes]);
+  }
+
+  function resolver(s, valor) {
+    chamar('resolver', { id: s.id, resolvido: valor }).then(function (resp) {
+      if (!resp.ok) throw new Error(resp.erro);
+      avisar(valor ? 'Marcado como resolvido.' : 'Reaberto.', true);
+      return recarregar();
+    }).catch(function (e) {
+      if (e.message !== 'sessao') avisar('Não consegui atualizar. Tente de novo.');
     });
   }
 
