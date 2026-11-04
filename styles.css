@@ -272,3 +272,16 @@ button, input, select { font: inherit; }
 .sobre-formacao li { padding: 6px 12px; border: 1px solid #E5CFE0; border-radius: 999px; background: rgba(255,255,255,.6); font-size: 14px; font-weight: 600; color: var(--carvao); }
 .sobre-assinatura { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 4px 0 8px; }
 .sobre-assinatura .botao { min-height: 48px; }
+
+/* Instagram */
+.insta { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 28px; padding: 28px 32px; border-radius: 24px; background: var(--branco); border: 1px solid var(--linha); margin-top: 8px; }
+.insta-icone { width: 64px; height: 64px; flex: 0 0 auto; border-radius: 18px; background: var(--rosa-claro); color: var(--rosa); display: flex; align-items: center; justify-content: center; }
+.insta-icone svg { width: 32px; height: 32px; }
+.insta-texto { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.insta-texto h2 { font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); letter-spacing: -.02em; }
+.insta-texto > p:last-child { color: var(--texto-suave); }
+.insta-botao { min-height: 50px; }
+.rodape-redes { display: flex; gap: 6px; }
+.rodape-redes a { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--carvao); border: 1px solid var(--linha); background: var(--branco); }
+.rodape-redes a:hover { color: var(--rosa); border-color: var(--rosa); }
+@media (max-width: 760px) { .insta { padding: 22px 20px; } .insta-botao { width: 100%; font-size: 14px; } }
