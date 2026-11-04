@@ -324,7 +324,14 @@
     return s.opcoes.map(function (o) { return o.data + ' ' + o.horario; }).sort()[0] || '';
   }
 
-  function linkWhatsapp(s) {
+  // Texto editado à mão por solicitação, para não se perder quando a lista é redesenhada.
+  var rascunhos = {};
+
+  function linkWhatsapp(s, texto) {
+    return 'https://wa.me/' + String(s.telefone).replace(/\D/g, '') + '?text=' + encodeURIComponent(texto);
+  }
+
+  function textoWhatsapp(s) {
     var formato = s.modo === 'online' ? 'online' : 'presencial';
     var nome = String(s.nome).split(' ')[0];
     var texto;
@@ -338,7 +345,7 @@
         .replace(/\{formato\}/g, formato)
         .replace(/\{opcoes\}/g, opcoes);
     }
-    return 'https://wa.me/' + String(s.telefone).replace(/\D/g, '') + '?text=' + encodeURIComponent(texto);
+    return texto;
   }
 
   function desenharSolicitacoes() {
@@ -380,8 +387,35 @@
         info.splice(1, 0, opcoes);
       }
 
+      var chave = s.id + ':' + s.status;
+      var texto = rascunhos[chave] || textoWhatsapp(s);
+      var botaoWhats = s.status !== 'cancelada' ? el('a', {
+        classe: 'botao botao-whats', href: linkWhatsapp(s, texto), target: '_blank', rel: 'noopener',
+        texto: s.status === 'confirmada' ? 'Enviar confirmação no WhatsApp' : 'Enviar no WhatsApp'
+      }) : null;
+      if (botaoWhats) {
+        var idCampo = 'msg-' + s.id;
+        var campo = el('textarea', { id: idCampo, classe: 'adm-msg-campo', rows: '6' });
+        campo.value = texto;
+        campo.addEventListener('input', function () {
+          rascunhos[chave] = campo.value;
+          botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
+        });
+        info.push(el('div', { classe: 'adm-msg' }, [
+          el('div', { classe: 'adm-msg-topo' }, [
+            el('label', { 'for': idCampo, texto: 'Mensagem para ' + String(s.nome).split(' ')[0] + ' (pode editar antes de enviar)' }),
+            el('button', { type: 'button', classe: 'adm-msg-padrao', texto: 'Voltar ao padrão', onclick: function () {
+              delete rascunhos[chave];
+              campo.value = textoWhatsapp(s);
+              botaoWhats.setAttribute('href', linkWhatsapp(s, campo.value));
+            } })
+          ]),
+          campo
+        ]));
+      }
+
       var acoes = el('div', { classe: 'adm-sol-acoes' }, [
-        s.status !== 'cancelada' ? el('a', { classe: 'botao botao-whats', href: linkWhatsapp(s), target: '_blank', rel: 'noopener', texto: s.status === 'confirmada' ? 'Mandar confirmação no WhatsApp' : 'Chamar no WhatsApp' }) : null,
+        botaoWhats,
         s.status === 'confirmada' ? el('button', { type: 'button', classe: 'botao', texto: 'Trocar horário', onclick: function () { mudarStatus(s, 'nova'); } }) : null,
         s.status !== 'cancelada' ? el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () {
           if (window.confirm('Cancelar a solicitação de ' + s.nome + '?' + (s.status === 'confirmada' ? ' O horário volta a ficar livre no site.' : ''))) mudarStatus(s, 'cancelada');
