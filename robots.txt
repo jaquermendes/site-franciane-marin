@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /avaliar/
 
 Sitemap: https://www.francianemarin.com.br/sitemap.xml
-Disallow: /avaliar/
