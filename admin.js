@@ -421,8 +421,8 @@
     var ul = el('ul', { classe: 'adm-itens' });
     lista.forEach(function (s) {
       var item = el('details', { classe: 'adm-item' });
-      if (abertos[s.id]) item.setAttribute('open', '');
-      item.addEventListener('toggle', function () { abertos[s.id] = item.open; });
+      var chaveAberto = s.id + ':' + s.status;
+      if (abertos[chaveAberto]) item.setAttribute('open', '');
       var botaoAcao = acao(s, item);
       item.appendChild(el('summary', { classe: 'adm-item-linha' }, [
         el('span', { classe: 'adm-item-nome' }, [el('strong', { texto: s.nome }), el('small', { texto: formatoDe(s) })]),
@@ -430,6 +430,11 @@
         botaoAcao
       ]));
       item.appendChild(desenhar(s));
+      // Botão Abrir/Fechar acompanha o estado do item.
+      var alterna = item.querySelector('[data-alterna]');
+      var atualizar = function () { if (alterna) alterna.textContent = item.open ? 'Fechar' : alterna.getAttribute('data-alterna'); };
+      item.addEventListener('toggle', function () { abertos[chaveAberto] = item.open; atualizar(); });
+      atualizar();
       ul.appendChild(el('li', {}, [item]));
     });
     caixa.appendChild(ul);
@@ -445,11 +450,19 @@
   function botaoLinha(texto, classe, aoClicar) {
     return el('button', { type: 'button', classe: 'botao ' + classe, texto: texto, onclick: function (ev) { ev.preventDefault(); ev.stopPropagation(); aoClicar(); } });
   }
-  function acaoEscolher(s, item) { return botaoLinha('Escolher horário', 'botao-rosa', function () { item.open = !item.open; }); }
-  function acaoAguardando(s) {
-    return botaoLinha('Paciente confirmou', 'botao-rosa', function () { mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Ela está em "Consultas confirmadas".'); });
+  function botaoAlterna(texto, classe, item) {
+    var b = botaoLinha(texto, classe, function () { item.open = !item.open; });
+    b.setAttribute('data-alterna', texto);
+    return b;
   }
-  function acaoConfirmada(s, item) { return botaoLinha('Abrir', 'botao-contorno', function () { item.open = !item.open; }); }
+  function acaoEscolher(s, item) { return botaoAlterna('Escolher horário', 'botao-rosa', item); }
+  function acaoAguardando(s, item) {
+    return el('span', { classe: 'adm-item-botoes' }, [
+      botaoAlterna('Abrir', 'botao-contorno', item),
+      botaoLinha('Paciente confirmou', 'botao-rosa', function () { mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Ela está em "Consultas confirmadas".'); })
+    ]);
+  }
+  function acaoConfirmada(s, item) { return botaoAlterna('Abrir', 'botao-contorno', item); }
 
   function detalhesContato(s) {
     return el('p', { classe: 'adm-contato' }, [
@@ -498,7 +511,7 @@
     s.opcoes.forEach(function (o, i) {
       lista.appendChild(el('button', {
         type: 'button', role: 'radio', 'aria-checked': String(i === escolhida), classe: 'adm-escolha-item',
-        onclick: function () { escolhas[s.id] = i; abertos[s.id] = true; delete rascunhos[s.id + ':proposta']; desenharSolicitacoes(); }
+        onclick: function () { escolhas[s.id] = i; abertos[s.id + ':' + s.status] = true; delete rascunhos[s.id + ':proposta']; desenharSolicitacoes(); }
       }, [
         el('span', { classe: 'adm-escolha-marca', 'aria-hidden': 'true' }),
         el('span', { classe: 'adm-escolha-texto' }, [el('strong', { texto: (i + 1) + 'ª sugestão' }), dataCurta(o.data) + ' às ' + o.horario])

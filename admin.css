@@ -222,3 +222,5 @@
   .adm-item-linha { grid-template-columns: 1fr auto; }
   .adm-item-resumo { grid-column: 1 / -1; grid-row: 2; white-space: normal; font-size: 13px; }
 }
+
+.adm-item-botoes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
