@@ -368,7 +368,7 @@ button, input, select { font: inherit; }
 .nicho-numeros strong { font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--rosa); }
 .nicho-numeros span { font-size: 14px; color: var(--texto-suave); }
 .nicho-foto { width: 100%; height: auto; aspect-ratio: 5 / 6; object-fit: cover; border-radius: 28px; }
-.nicho-corpo { max-width: 900px; display: flex; flex-direction: column; gap: 56px; padding-bottom: 24px; }
+.nicho-corpo { display: flex; flex-direction: column; gap: 56px; padding-bottom: 24px; }
 .nicho-bloco { display: flex; flex-direction: column; gap: 16px; }
 .nicho-bloco h2 { font-weight: 800; font-size: clamp(26px, 2.8vw, 36px); letter-spacing: -.03em; line-height: 1.08; }
 .nicho-bloco > p { font-size: 17px; line-height: 1.7; color: var(--texto); }
@@ -387,3 +387,22 @@ button, input, select { font: inherit; }
   .nicho-lista { grid-template-columns: 1fr; }
   .nicho-acoes .botao { width: 100%; }
 }
+.nicho-visual { background: linear-gradient(160deg, var(--rosa-claro), var(--branco) 70%); border: 1px solid var(--linha); border-radius: 28px; padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+.nicho-visual-topo { display: flex; align-items: center; gap: 18px; }
+.nicho-visual-icone { flex: 0 0 auto; width: 96px; height: 96px; border-radius: 28px; background: var(--rosa); color: var(--branco); display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 28px rgba(162,54,143,.25); }
+.nicho-visual-topo strong { font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1.1; letter-spacing: -.02em; color: var(--carvao); }
+.nicho-visual ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.nicho-visual li { background: var(--branco); border: 1px solid var(--linha); border-radius: 20px; padding: 18px 16px; display: flex; flex-direction: column; gap: 12px; font-weight: 600; font-size: 15px; line-height: 1.3; color: var(--carvao); }
+.nicho-visual li span { width: 52px; height: 52px; border-radius: 16px; background: var(--rosa-claro); color: var(--rosa); display: flex; align-items: center; justify-content: center; }
+.nicho-passos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.nicho-passos li { background: var(--branco); border: 1px solid var(--linha); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.nicho-passos li > span { width: 34px; height: 34px; border-radius: 999px; background: var(--rosa); color: var(--branco); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.nicho-passos strong { font-family: var(--display); font-size: 17px; }
+.nicho-passos p { color: var(--texto-suave); line-height: 1.55; }
+@media (max-width: 760px) {
+  .nicho-visual { padding: 22px; gap: 18px; }
+  .nicho-visual-icone { width: 72px; height: 72px; border-radius: 22px; }
+  .nicho-visual-topo strong { font-size: 20px; }
+  .nicho-passos { grid-template-columns: 1fr; }
+}
+.nicho-corpo > * { max-width: 900px; }
