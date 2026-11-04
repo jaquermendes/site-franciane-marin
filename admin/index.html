@@ -54,17 +54,22 @@
       </div>
     </div>
     <nav class="adm-abas" aria-label="Seções do painel" role="tablist">
-      <button type="button" role="tab" aria-selected="true" aria-controls="aba-dias" id="tab-dias">Horários por dia</button>
+      <button type="button" role="tab" aria-selected="true" aria-controls="aba-solicitacoes" id="tab-solicitacoes">Solicitações <span class="adm-contador" id="contador-novas" hidden></span></button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="aba-dias" id="tab-dias">Horários por dia</button>
       <button type="button" role="tab" aria-selected="false" aria-controls="aba-semana" id="tab-semana">Semana padrão</button>
-      <button type="button" role="tab" aria-selected="false" aria-controls="aba-solicitacoes" id="tab-solicitacoes">Solicitações <span class="adm-contador" id="contador-novas" hidden></span></button>
     </nav>
   </header>
 
   <main class="adm-conteudo">
     <p class="adm-aviso" id="aviso" aria-live="polite" hidden></p>
 
+    <!-- Solicitações -->
+    <section id="aba-solicitacoes" role="tabpanel" aria-labelledby="tab-solicitacoes" class="adm-aba">
+      <div id="lista-solicitacoes" class="adm-solicitacoes"></div>
+    </section>
+
     <!-- Por dia -->
-    <section id="aba-dias" role="tabpanel" aria-labelledby="tab-dias" class="adm-aba">
+    <section id="aba-dias" role="tabpanel" aria-labelledby="tab-dias" class="adm-aba" hidden>
       <div class="adm-formato" role="radiogroup" aria-label="Formato">
         <button type="button" role="radio" aria-checked="true" data-modo="presencial">Presencial</button>
         <button type="button" role="radio" aria-checked="false" data-modo="online">Online</button>
@@ -89,10 +94,6 @@
       </div>
     </section>
 
-    <!-- Solicitações -->
-    <section id="aba-solicitacoes" role="tabpanel" aria-labelledby="tab-solicitacoes" class="adm-aba" hidden>
-      <div id="lista-solicitacoes" class="adm-solicitacoes"></div>
-    </section>
   </main>
 </div>
 
