@@ -338,3 +338,14 @@ button, input, select { font: inherit; }
 .preparo-formatos p { color: var(--texto); }
 .ok-preparo { color: var(--rosa-suave); font-weight: 600; font-size: 15px; }
 .ok-preparo:hover { color: var(--branco); }
+
+/* Preparo mais leve */
+.preparo .secao-cabeca h2 { font-size: clamp(26px, 2.8vw, 36px); }
+.preparo-calma { font-family: var(--display); font-weight: 600; font-size: 20px !important; line-height: 1.4 !important; color: var(--vinho) !important; max-width: 480px; }
+.preparo-lista { gap: 10px; }
+.preparo-lista li { padding: 16px 18px; gap: 4px; border-radius: 16px; flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 12px; }
+.preparo-lista li p { flex-basis: 100%; font-size: 14px; }
+.preparo-icone { width: 40px; height: 40px; border-radius: 12px; margin: 0; }
+.preparo-icone svg { width: 22px; height: 22px; }
+.preparo-lista h3 { font-size: 16px; }
+.preparo-formatos > div { padding: 14px 18px; }

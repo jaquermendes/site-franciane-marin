@@ -347,7 +347,7 @@
       'Olá, ' + primeiroNome(s) + '! 😊',
       '✅ Sua consulta ' + formatoDe(s) + ' está *confirmada ' + comArtigo(s) + '*.',
       '',
-      'Quer se preparar melhor para a consulta? Separei algumas dicas aqui:',
+      'Se quiser, separei algumas dicas do que pode ajudar na consulta (nada é obrigatório, viu?):',
       'https://www.francianemarin.com.br/#preparo',
       '',
       'Qualquer dúvida, é só me chamar por aqui. Até lá!'
