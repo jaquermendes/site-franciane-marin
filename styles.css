@@ -209,7 +209,10 @@ button, input, select { font: inherit; }
 
 .perguntas { max-width: 900px; gap: 24px; }
 .perguntas h2 { font-weight: 800; font-size: clamp(30px, 3.4vw, 44px); letter-spacing: -.03em; }
-.lista-perguntas { border-top: 1px solid var(--linha); }
+.lista-perguntas { display: flex; flex-direction: column; }
+.perguntas-grupo { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--rosa); padding: 32px 0 12px; border-bottom: 1px solid var(--linha); }
+.perguntas-grupo:first-child { padding-top: 0; }
+.lista-perguntas details p a { color: var(--rosa); font-weight: 600; }
 .lista-perguntas details { padding: 20px 0; border-bottom: 1px solid var(--linha); }
 .lista-perguntas summary { cursor: pointer; font-family: var(--display); font-weight: 700; font-size: 19px; min-height: 28px; }
 .lista-perguntas details p { margin-top: 12px; color: var(--texto-suave); line-height: 1.6; }
