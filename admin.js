@@ -117,10 +117,11 @@
     desenharDetalhe();
     desenharSemana();
     desenharSolicitacoes();
+    desenharAgenda();
   }
 
   // ---------- Abas ----------
-  var abas = { dias: $('tab-dias'), semana: $('tab-semana'), solicitacoes: $('tab-solicitacoes') };
+  var abas = { dias: $('tab-dias'), semana: $('tab-semana'), solicitacoes: $('tab-solicitacoes'), agenda: $('tab-agenda') };
   Object.keys(abas).forEach(function (nome) {
     abas[nome].addEventListener('click', function () {
       Object.keys(abas).forEach(function (o) {
@@ -129,6 +130,119 @@
       });
       avisar('');
     });
+  });
+
+  // ---------- Agenda geral ----------
+  var DIAS_AGENDA = 14;
+
+  function reservasDoDia(iso) {
+    return (estado.painel.solicitacoes || []).filter(function (s) {
+      return s.data === iso && (s.status === 'confirmada' || s.status === 'aguardando');
+    }).sort(function (a, b) { return a.horario.localeCompare(b.horario); });
+  }
+
+  function livresDoDia(dia, modo) {
+    var ocupados = reservasDoDia(dia.data).map(function (s) { return s.horario; });
+    return dia[modo].atual.filter(function (h) { return ocupados.indexOf(h) === -1; });
+  }
+
+  function desenharAgenda() {
+    var caixa = $('agenda-geral');
+    caixa.innerHTML = '';
+    estado.painel.dias.slice(0, DIAS_AGENDA).forEach(function (dia) {
+      var reservas = reservasDoDia(dia.data);
+      var pres = livresDoDia(dia, 'presencial');
+      var onl = livresDoDia(dia, 'online');
+      var lista = el('ul', { classe: 'adm-agenda-lista' });
+      reservas.forEach(function (s) {
+        lista.appendChild(el('li', { classe: 'adm-agenda-item ' + s.status }, [
+          el('strong', { classe: 'adm-agenda-hora', texto: s.horario }),
+          el('span', { classe: 'adm-agenda-quem' }, [el('strong', { texto: s.nome }), ' · ' + formatoDe(s)]),
+          el('span', { classe: 'adm-status ' + s.status, texto: s.status === 'confirmada' ? 'Confirmada' : 'Aguardando resposta' })
+        ]));
+      });
+      if (!reservas.length) lista.appendChild(el('li', { classe: 'adm-agenda-vazio', texto: 'Nenhum atendimento marcado.' }));
+      var livres = el('p', { classe: 'adm-agenda-livres' }, [
+        el('span', {}, [el('strong', { texto: 'Livres presencial: ' }), pres.length ? pres.join(', ') : 'nenhum']),
+        el('span', {}, [el('strong', { texto: 'Livres online: ' }), onl.length ? onl.join(', ') : 'nenhum'])
+      ]);
+      caixa.appendChild(el('section', { classe: 'adm-cartao adm-agenda-dia' + (reservas.length ? '' : ' vazio') }, [
+        el('div', { classe: 'adm-agenda-cabeca' }, [
+          el('h3', { texto: dataLonga(dia.data) }),
+          el('button', { type: 'button', classe: 'botao', texto: '+ Atendimento neste dia', onclick: function () { abrirManual(dia.data); } })
+        ]),
+        lista,
+        livres
+      ]));
+    });
+  }
+
+  // Formulário de atendimento manual.
+  var formManual = $('form-manual');
+  function abrirManual(iso) {
+    formManual.hidden = false;
+    $('m-data').value = iso || hojeAgenda();
+    $('m-erro').textContent = '';
+    atualizarLivresManual();
+    formManual.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('m-nome').focus();
+  }
+  function hojeAgenda() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function atualizarLivresManual() {
+    var caixa = $('m-livres');
+    caixa.innerHTML = '';
+    var dia = (estado.painel.dias || []).filter(function (d) { return d.data === $('m-data').value; })[0];
+    if (!dia) return;
+    var livres = livresDoDia(dia, $('m-modo').value);
+    if (!livres.length) { caixa.appendChild(el('span', { classe: 'adm-vazio', texto: 'Sem horários livres da agenda neste dia. Você pode digitar outro horário.' })); return; }
+    caixa.appendChild(el('span', { classe: 'adm-manual-rotulo', texto: 'Livres neste dia:' }));
+    livres.forEach(function (h) {
+      caixa.appendChild(el('button', { type: 'button', classe: 'adm-chip-hora' + ($('m-hora').value === h ? ' ativo' : ''), texto: h, onclick: function () { $('m-hora').value = h; atualizarLivresManual(); } }));
+    });
+  }
+  $('abrir-manual').addEventListener('click', function () { abrirManual(); });
+  $('m-cancelar').addEventListener('click', function () { formManual.hidden = true; formManual.reset(); });
+  $('m-data').addEventListener('change', atualizarLivresManual);
+  $('m-modo').addEventListener('change', atualizarLivresManual);
+  $('m-hora').addEventListener('input', atualizarLivresManual);
+  $('m-pais').addEventListener('change', function () { $('m-codigo').hidden = $('m-pais').value !== 'outro'; });
+  $('m-telefone').addEventListener('input', function () {
+    if ($('m-pais').value !== '55') return;
+    var d = $('m-telefone').value.replace(/\D/g, '').slice(0, 11);
+    var t = d.length <= 2 ? (d ? '(' + d : '') : '(' + d.slice(0, 2) + ') ' + (d.length <= 10 ? d.slice(2, 6) + (d.length > 6 ? '-' + d.slice(6) : '') : d.slice(2, 7) + '-' + d.slice(7));
+    $('m-telefone').value = t;
+  });
+
+  formManual.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var nome = $('m-nome').value.trim();
+    var codigo = $('m-pais').value === 'outro' ? $('m-codigo').value.replace(/\D/g, '') : $('m-pais').value;
+    var digitos = $('m-telefone').value.replace(/\D/g, '');
+    var erro = '';
+    if (nome.length < 2) erro = 'Informe o nome.';
+    else if (!codigo || (codigo === '55' ? digitos.length < 10 : digitos.length < 6)) erro = 'Informe o WhatsApp com DDD.';
+    else if (!$('m-data').value) erro = 'Escolha o dia.';
+    else if (!horaValida($('m-hora').value)) erro = 'Escolha o horário.';
+    $('m-erro').textContent = erro;
+    if (erro) return;
+    var botao = $('m-salvar');
+    botao.disabled = true;
+    chamar('manual', {
+      nome: nome, modo: $('m-modo').value, data: $('m-data').value, horario: $('m-hora').value,
+      telefone: '+' + codigo + digitos, telefoneExibicao: '+' + codigo + ' ' + $('m-telefone').value
+    }).then(function (resp) {
+      if (resp.erro === 'conflito') { $('m-erro').textContent = 'Esse horário já está reservado para ' + resp.com + '.'; return; }
+      if (!resp.ok) throw new Error(resp.erro);
+      formManual.hidden = true;
+      formManual.reset();
+      avisar('Atendimento salvo. Ele está em Solicitações > "Aguardando resposta" para você enviar a confirmação no WhatsApp.', true);
+      return recarregar();
+    }).catch(function (e) {
+      if (e.message !== 'sessao') $('m-erro').textContent = 'Não consegui salvar. Tente de novo.';
+    }).then(function () { botao.disabled = false; });
   });
 
   // ---------- Horários por dia ----------

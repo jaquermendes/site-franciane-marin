@@ -224,3 +224,32 @@
 }
 
 .adm-item-botoes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Agenda geral */
+.adm-agenda-topo { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.adm-agenda-topo .botao, .adm-salvar .botao { border: 1.5px solid var(--carvao); cursor: pointer; }
+.adm-agenda-topo .botao-rosa, .adm-salvar .botao-rosa { border-color: var(--rosa); background: var(--rosa); color: var(--branco); }
+.adm-manual { display: flex; flex-direction: column; gap: 12px; }
+.adm-manual h2 { font-size: 19px; }
+.adm-manual-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.adm-manual select, .adm-manual input { min-height: 46px; padding: 0 12px; border: 1.5px solid #D9CDD5; border-radius: 12px; background: var(--branco); color: var(--grafite); font-size: 16px; width: 100%; }
+.adm-manual-tel { display: flex; gap: 6px; }
+.adm-manual-tel select { width: 90px; flex: 0 0 auto; }
+.adm-manual-tel #m-codigo { width: 90px; flex: 0 0 auto; }
+.adm-manual-livres { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.adm-manual-rotulo { font-size: 13px; color: var(--texto-suave); margin-right: 4px; }
+.adm-chip-hora { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1.5px solid #D9CDD5; background: var(--branco); font-weight: 600; cursor: pointer; }
+.adm-chip-hora.ativo, .adm-chip-hora:hover { border-color: var(--rosa); background: var(--rosa-claro); color: var(--vinho); }
+.adm-agenda { display: flex; flex-direction: column; gap: 8px; }
+.adm-agenda-dia { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+.adm-agenda-dia.vazio { opacity: .85; }
+.adm-agenda-cabeca { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.adm-agenda-cabeca h3 { font-size: 16px; }
+.adm-agenda-cabeca .botao { min-height: 36px; padding: 0 12px; font-size: 13px; border: 1.5px solid var(--carvao); background: var(--branco); cursor: pointer; }
+.adm-agenda-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.adm-agenda-item { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--fundo); font-size: 14px; }
+.adm-agenda-hora { font-family: var(--display); font-size: 15px; }
+.adm-agenda-vazio { font-size: 14px; color: var(--texto-suave); }
+.adm-agenda-livres { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--texto-suave); }
+.adm-agenda-livres strong { color: var(--texto); }
+@media (max-width: 600px) { .adm-agenda-item { grid-template-columns: 48px 1fr; } .adm-agenda-item .adm-status { grid-column: 2; justify-self: start; } }

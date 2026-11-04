@@ -55,6 +55,7 @@
     </div>
     <nav class="adm-abas" aria-label="Seções do painel" role="tablist">
       <button type="button" role="tab" aria-selected="true" aria-controls="aba-solicitacoes" id="tab-solicitacoes">Solicitações <span class="adm-contador" id="contador-novas" hidden></span></button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="aba-agenda" id="tab-agenda">Agenda</button>
       <button type="button" role="tab" aria-selected="false" aria-controls="aba-dias" id="tab-dias">Horários disponíveis</button>
       <button type="button" role="tab" aria-selected="false" aria-controls="aba-semana" id="tab-semana">Semana padrão</button>
     </nav>
@@ -66,6 +67,36 @@
     <!-- Solicitações -->
     <section id="aba-solicitacoes" role="tabpanel" aria-labelledby="tab-solicitacoes" class="adm-aba">
       <div id="lista-solicitacoes" class="adm-solicitacoes"></div>
+    </section>
+
+    <!-- Agenda geral -->
+    <section id="aba-agenda" role="tabpanel" aria-labelledby="tab-agenda" class="adm-aba" hidden>
+      <div class="adm-agenda-topo">
+        <p class="adm-explica">Todos os atendimentos dos próximos dias, de qualquer origem: site, WhatsApp ou telefone.</p>
+        <button type="button" class="botao botao-rosa" id="abrir-manual">+ Novo atendimento</button>
+      </div>
+
+      <form id="form-manual" class="adm-cartao adm-manual" hidden novalidate>
+        <h2>Novo atendimento</h2>
+        <p class="adm-explica">Para quem marcou por telefone ou WhatsApp. Ele entra em "Aguardando resposta" para você enviar a confirmação.</p>
+        <div class="adm-manual-grade">
+          <div class="adm-campo"><label for="m-nome">Nome</label><input id="m-nome" autocomplete="off" required></div>
+          <div class="adm-campo"><label for="m-telefone">WhatsApp com DDD</label>
+            <div class="adm-manual-tel"><select id="m-pais" aria-label="Código do país"><option value="55">+55</option><option value="351">+351</option><option value="1">+1</option><option value="outro">Outro</option></select><input id="m-codigo" inputmode="numeric" placeholder="+ código" aria-label="Código do país" hidden><input id="m-telefone" type="tel" inputmode="tel" placeholder="(16) 99999-9999" required></div>
+          </div>
+          <div class="adm-campo"><label for="m-modo">Formato</label><select id="m-modo"><option value="presencial">Presencial</option><option value="online">Online</option></select></div>
+          <div class="adm-campo"><label for="m-data">Dia</label><input id="m-data" type="date" required></div>
+          <div class="adm-campo"><label for="m-hora">Horário</label><input id="m-hora" type="time" step="900" required></div>
+        </div>
+        <div class="adm-manual-livres" id="m-livres"></div>
+        <p class="adm-erro" id="m-erro" aria-live="polite"></p>
+        <div class="adm-salvar">
+          <button type="submit" class="botao botao-rosa" id="m-salvar">Salvar atendimento</button>
+          <button type="button" class="botao" id="m-cancelar">Cancelar</button>
+        </div>
+      </form>
+
+      <div id="agenda-geral" class="adm-agenda"></div>
     </section>
 
     <!-- Por dia -->
