@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Painel de horários · Franciane Marin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="adm">
+
+<!-- Login -->
+<main id="tela-login" class="adm-login">
+  <form id="form-login" class="adm-cartao adm-login-cartao" novalidate>
+    <div class="logo">
+      <span class="logo-rotulo">NUTRICIONISTA</span>
+      <span class="logo-nome">Franciane Marin</span>
+    </div>
+    <h1>Painel de horários</h1>
+    <div class="adm-campo">
+      <label for="usuario">Usuário</label>
+      <input id="usuario" name="usuario" autocomplete="username" autocapitalize="none" required>
+    </div>
+    <div class="adm-campo">
+      <label for="senha">Senha</label>
+      <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+    </div>
+    <p class="adm-erro" id="erro-login" aria-live="polite"></p>
+    <button type="submit" class="botao botao-rosa adm-botao-largo" id="entrar">Entrar</button>
+  </form>
+</main>
+
+<!-- Painel -->
+<div id="tela-painel" hidden>
+  <header class="adm-topo">
+    <div class="adm-topo-inner">
+      <div class="adm-marca">
+        <span class="logo-nome logo-nome-pequeno">Franciane Marin</span>
+        <span>Painel de horários</span>
+      </div>
+      <div class="adm-topo-acoes">
+        <a class="botao botao-contorno" href="index.html" target="_blank" rel="noopener">Ver site</a>
+        <button type="button" class="botao botao-contorno" id="sair">Sair</button>
+      </div>
+    </div>
+    <nav class="adm-abas" aria-label="Seções do painel" role="tablist">
+      <button type="button" role="tab" aria-selected="true" aria-controls="aba-dias" id="tab-dias">Horários por dia</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="aba-semana" id="tab-semana">Semana padrão</button>
+      <button type="button" role="tab" aria-selected="false" aria-controls="aba-solicitacoes" id="tab-solicitacoes">Solicitações <span class="adm-contador" id="contador-novas" hidden></span></button>
+    </nav>
+  </header>
+
+  <main class="adm-conteudo">
+    <p class="adm-aviso" id="aviso" aria-live="polite" hidden></p>
+
+    <!-- Por dia -->
+    <section id="aba-dias" role="tabpanel" aria-labelledby="tab-dias" class="adm-aba">
+      <div class="adm-formato" role="radiogroup" aria-label="Formato">
+        <button type="button" role="radio" aria-checked="true" data-modo="presencial">Presencial</button>
+        <button type="button" role="radio" aria-checked="false" data-modo="online">Online</button>
+      </div>
+      <div class="adm-dias" id="lista-dias" role="radiogroup" aria-label="Dia"></div>
+      <div class="adm-cartao" id="detalhe-dia"></div>
+    </section>
+
+    <!-- Semana padrão -->
+    <section id="aba-semana" role="tabpanel" aria-labelledby="tab-semana" class="adm-aba" hidden>
+      <div class="adm-formato" role="radiogroup" aria-label="Formato">
+        <button type="button" role="radio" aria-checked="true" data-modo-semana="presencial">Presencial</button>
+        <button type="button" role="radio" aria-checked="false" data-modo-semana="online">Online</button>
+      </div>
+      <div class="adm-cartao">
+        <p class="adm-explica">Estes são os horários de toda semana. Dias em que você mexeu na aba "Horários por dia" continuam como você deixou.</p>
+        <div id="grade-semana" class="adm-semana"></div>
+        <div class="adm-salvar">
+          <button type="button" class="botao botao-rosa" id="salvar-semana">Salvar semana padrão</button>
+          <span id="estado-semana" class="adm-estado" aria-live="polite"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Solicitações -->
+    <section id="aba-solicitacoes" role="tabpanel" aria-labelledby="tab-solicitacoes" class="adm-aba" hidden>
+      <div id="lista-solicitacoes" class="adm-solicitacoes"></div>
+    </section>
+  </main>
+</div>
+
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
