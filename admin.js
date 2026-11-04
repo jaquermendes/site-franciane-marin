@@ -343,8 +343,16 @@
   }
 
   function textoConfirmacao(s) {
-    return 'Olá, ' + primeiroNome(s) + '! Sua consulta ' + formatoDe(s) + ' está confirmada ' + comArtigo(s) +
-      '. Qualquer dúvida, é só me chamar por aqui. Até lá!';
+    return [
+      'Olá, ' + primeiroNome(s) + '! 😊',
+      '✅ Sua consulta ' + formatoDe(s) + ' está *confirmada ' + comArtigo(s) + '*.',
+      '',
+      'Quer se preparar melhor para a consulta? Separei algumas dicas aqui:',
+      'https://www.francianemarin.com.br/#preparo',
+      '',
+      'Qualquer dúvida, é só me chamar por aqui. Até lá!',
+      'Franciane Marin · Nutricionista'
+    ].join('\n');
   }
 
   function chegada(s) {
