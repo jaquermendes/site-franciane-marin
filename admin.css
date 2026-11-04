@@ -143,3 +143,9 @@
 .adm-sol.fechada { opacity: .7; }
 .adm-sol.fechada:hover { opacity: 1; }
 .adm-sol-acoes .botao-resolver { border-color: #43337A; color: #43337A; }
+
+/* Sugestão oferecida na mensagem */
+.adm-opcao-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.adm-opcoes li.oferecida { border-color: var(--rosa); background: var(--rosa-claro); }
+.adm-opcao-acoes .botao[aria-pressed] { background: var(--branco); border: 1.5px solid var(--carvao); color: var(--carvao); }
+.adm-opcao-acoes .botao[aria-pressed="true"] { border-color: var(--rosa); color: var(--rosa); }

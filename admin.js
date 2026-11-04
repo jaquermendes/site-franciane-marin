@@ -326,6 +326,13 @@
 
   // Texto editado à mão por solicitação, para não se perder quando a lista é redesenhada.
   var rascunhos = {};
+  // Qual sugestão ela vai oferecer na mensagem ("Consigo na sexta..."), por solicitação.
+  var propostas = {};
+
+  function comArtigo(o) {
+    var dia = deISO(o.data).getDay();
+    return (dia === 0 || dia === 6 ? 'no ' : 'na ') + textoOpcao(o);
+  }
 
   function linkWhatsapp(s, texto) {
     return 'https://wa.me/' + String(s.telefone).replace(/\D/g, '') + '?text=' + encodeURIComponent(texto);
@@ -338,12 +345,11 @@
     if (s.status === 'confirmada') {
       texto = 'Olá, ' + nome + '! Aqui é a Franciane Marin. Sua consulta ' + formato + ' está confirmada para ' + textoOpcao(s) + '. Qualquer dúvida, é só me chamar por aqui. Até lá!';
     } else {
-      var lista = s.opcoes.map(textoOpcao);
-      var opcoes = lista.length > 1 ? lista.slice(0, -1).join('; ') + ' ou ' + lista[lista.length - 1] : lista[0];
+      var proposta = s.opcoes[propostas[s.id] || 0] || s.opcoes[0];
       texto = (estado.painel.mensagemWhatsapp || '')
         .replace(/\{nome\}/g, nome)
         .replace(/\{formato\}/g, formato)
-        .replace(/\{opcoes\}/g, opcoes);
+        .replace(/\{proposta\}/g, proposta ? comArtigo(proposta) : '');
     }
     return texto;
   }
@@ -392,14 +398,27 @@
       info.splice(1, 0, el('span', { classe: 'adm-sol-quando', texto: dataCurta(s.data) + ' às ' + s.horario }));
     } else {
       var opcoes = el('ol', { classe: 'adm-opcoes' });
+      var oferecida = propostas[s.id] || 0;
       s.opcoes.forEach(function (o, i) {
-        opcoes.appendChild(el('li', {}, [
+        var ativa = s.status === 'nova' && !fechada;
+        opcoes.appendChild(el('li', { classe: ativa && i === oferecida ? 'oferecida' : '' }, [
           el('span', {}, [el('strong', { texto: (i + 1) + 'ª opção ' }), dataCurta(o.data) + ' às ' + o.horario]),
-          s.status === 'nova' && !fechada ? el('button', {
-            type: 'button', classe: 'botao botao-rosa', texto: 'Confirmar este',
-            'aria-label': 'Confirmar ' + dataCurta(o.data) + ' às ' + o.horario + ' para ' + s.nome,
-            onclick: function () { mudarStatus(s, 'confirmada', i); }
-          }) : null
+          ativa ? el('div', { classe: 'adm-opcao-acoes' }, [
+            el('button', {
+              type: 'button', classe: 'botao', 'aria-pressed': String(i === oferecida),
+              texto: i === oferecida ? 'Na mensagem' : 'Oferecer na mensagem',
+              onclick: function () {
+                propostas[s.id] = i;
+                delete rascunhos[s.id + ':' + s.status];
+                desenharSolicitacoes();
+              }
+            }),
+            el('button', {
+              type: 'button', classe: 'botao botao-rosa', texto: 'Confirmar este',
+              'aria-label': 'Confirmar ' + dataCurta(o.data) + ' às ' + o.horario + ' para ' + s.nome,
+              onclick: function () { mudarStatus(s, 'confirmada', i); }
+            })
+          ]) : null
         ]));
       });
       info.splice(1, 0, opcoes);
