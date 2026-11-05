@@ -409,3 +409,15 @@ button, input, select { font: inherit; }
   .nicho-passos { grid-template-columns: 1fr; }
 }
 .nicho-corpo > * { max-width: 900px; }
+
+/* Chamada final com a foto apontando para a frase */
+.chamada-com-foto { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); grid-template-areas: "titulo titulo" "foto lado"; column-gap: 48px; row-gap: 20px; padding-bottom: 0; overflow: hidden; }
+.chamada-com-foto h2 { grid-area: titulo; max-width: 760px; }
+.chamada-lado { grid-area: lado; align-self: center; display: flex; flex-direction: column; gap: 24px; padding-bottom: 32px; }
+.chamada-com-foto .chamada-texto { font-size: 18px; line-height: 1.55; color: rgba(255,255,255,.9); max-width: 460px; }
+.chamada-foto { grid-area: foto; width: 100%; height: auto; aspect-ratio: 720 / 837; object-fit: cover; border-radius: 24px 24px 0 0; align-self: end; }
+@media (max-width: 760px) {
+  .chamada-com-foto { grid-template-columns: 1fr; grid-template-areas: "titulo" "foto" "lado"; padding-bottom: 36px; }
+  .chamada-lado { padding-bottom: 0; }
+  .chamada-foto { max-width: 280px; border-radius: 24px; }
+}
