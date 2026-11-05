@@ -253,3 +253,53 @@
 .adm-agenda-livres { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--texto-suave); }
 .adm-agenda-livres strong { color: var(--texto); }
 @media (max-width: 600px) { .adm-agenda-item { grid-template-columns: 48px 1fr; } .adm-agenda-item .adm-status { grid-column: 2; justify-self: start; } }
+
+/* Agenda: um dia por vez, cada horário é uma linha */
+.adm-ag-dias { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 8px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.adm-ag-dia { flex: 0 0 auto; scroll-snap-align: start; min-width: 74px; padding: 10px 8px; border-radius: 16px; border: 1.5px solid #E2D6DE; background: var(--branco); display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; color: var(--grafite); }
+.adm-ag-dia strong { font-family: var(--display); font-size: 22px; line-height: 1.1; }
+.adm-ag-dia-nome { font-size: 12px; font-weight: 600; color: var(--texto-suave); }
+.adm-ag-dia-conta { font-size: 11px; color: var(--texto-suave); }
+.adm-ag-dia-conta.tem { color: var(--rosa); font-weight: 700; }
+.adm-ag-dia[aria-selected="true"] { background: var(--rosa); border-color: var(--rosa); color: var(--branco); }
+.adm-ag-dia[aria-selected="true"] .adm-ag-dia-nome, .adm-ag-dia[aria-selected="true"] .adm-ag-dia-conta { color: rgba(255,255,255,.9); }
+.adm-ag-dia-cartao { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.adm-ag-cabeca { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.adm-ag-cabeca h3 { font-size: 18px; }
+.adm-ag-cabeca p { font-size: 14px; color: var(--texto-suave); margin-top: 2px; }
+.adm-ag-cabeca .botao { min-height: 38px; padding: 0 14px; font-size: 13px; border: 1.5px solid var(--carvao); background: var(--branco); cursor: pointer; flex: 0 0 auto; }
+.adm-ag-lista { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.adm-ag-linha { display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 56px; padding: 8px 12px; border-radius: 14px; }
+.adm-ag-hora { font-family: var(--display); font-size: 16px; }
+.adm-ag-linha.ocupada { background: var(--rosa-claro); border-left: 4px solid var(--rosa); }
+.adm-ag-linha.ocupada.aguardando { background: #FFF6E5; border-left-color: #D99A1E; }
+.adm-ag-quem { display: flex; flex-direction: column; min-width: 0; }
+.adm-ag-quem strong { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-ag-quem span { font-size: 13px; color: var(--texto-suave); }
+.adm-ag-zap { min-height: 36px; padding: 0 12px; border-radius: 999px; background: var(--whats); color: var(--branco); font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; }
+.adm-ag-linha.livre { border: 1.5px dashed #E2D6DE; background: var(--branco); }
+.adm-ag-linha.livre.aberta { border-style: solid; border-color: var(--rosa); }
+.adm-ag-livre { font-size: 14px; color: var(--texto-suave); }
+.adm-ag-marcar { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.adm-ag-botao { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1.5px solid #D9CDD5; background: var(--branco); color: var(--vinho); font-size: 13px; font-weight: 700; cursor: pointer; }
+.adm-ag-botao:hover, .adm-ag-botao.ativo { border-color: var(--rosa); background: var(--rosa-claro); }
+.adm-ag-linha-form { list-style: none; }
+.adm-ag-rapido { margin: -2px 0 6px 70px; padding: 14px; border-radius: 14px; background: var(--fundo); display: flex; flex-direction: column; gap: 10px; }
+.adm-ag-rapido-titulo { font-size: 13px; font-weight: 700; color: var(--vinho); }
+.adm-ag-rapido-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.adm-ag-rapido input { min-height: 46px; padding: 0 12px; border: 1.5px solid #D9CDD5; border-radius: 12px; background: var(--branco); font-size: 16px; width: 100%; }
+.adm-ag-rapido-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+.adm-ag-rapido-acoes .botao { min-height: 42px; cursor: pointer; border: 1.5px solid var(--carvao); background: var(--branco); }
+.adm-ag-rapido-acoes .botao-rosa { border-color: var(--rosa); background: var(--rosa); color: var(--branco); }
+.adm-ag-vazio { padding: 18px; border-radius: 14px; background: var(--fundo); color: var(--texto-suave); font-size: 14px; }
+@media (max-width: 600px) {
+  .adm-ag-linha { grid-template-columns: 48px minmax(0, 1fr); }
+  .adm-ag-zap, .adm-ag-marcar { grid-column: 2; justify-self: start; justify-content: flex-start; }
+  .adm-ag-rapido { margin-left: 0; }
+  .adm-ag-rapido-campos { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .adm-ag-linha.livre { min-height: 48px; }
+  .adm-ag-linha.livre .adm-ag-livre { display: none; }
+  .adm-ag-linha.livre .adm-ag-marcar { grid-column: 2; grid-row: 1; justify-self: end; }
+}

@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Instrument+Sans:wght@400;500;600&family=Pinyon+Script&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../styles.css">
-<link rel="stylesheet" href="../admin.css">
+<link rel="stylesheet" href="../styles.css?v=20261105125307">
+<link rel="stylesheet" href="../admin.css?v=20261105125307">
 </head>
 <body class="adm">
 
@@ -72,13 +72,12 @@
     <!-- Agenda geral -->
     <section id="aba-agenda" role="tabpanel" aria-labelledby="tab-agenda" class="adm-aba" hidden>
       <div class="adm-agenda-topo">
-        <p class="adm-explica">Todos os atendimentos dos próximos dias, de qualquer origem: site, WhatsApp ou telefone.</p>
-        <button type="button" class="botao botao-rosa" id="abrir-manual">+ Novo atendimento</button>
+        <p class="adm-explica">Escolha o dia. Para marcar quem agendou por telefone ou WhatsApp, toque em <strong>+ Presencial</strong> ou <strong>+ Online</strong> num horário livre.</p>
       </div>
 
       <form id="form-manual" class="adm-cartao adm-manual" hidden novalidate>
-        <h2>Novo atendimento</h2>
-        <p class="adm-explica">Para quem marcou por telefone ou WhatsApp. Ele entra em "Aguardando resposta" para você enviar a confirmação.</p>
+        <h2>Marcar em outro horário</h2>
+        <p class="adm-explica">Use para um horário que não está aberto na agenda. O atendimento entra em "Aguardando resposta" para você enviar a confirmação.</p>
         <div class="adm-manual-grade">
           <div class="adm-campo"><label for="m-nome">Nome</label><input id="m-nome" autocomplete="off" required></div>
           <div class="adm-campo"><label for="m-telefone">WhatsApp com DDD</label>
@@ -129,6 +128,6 @@
 </div>
 
 <script src="../config.js"></script>
-<script src="../admin.js"></script>
+<script src="../admin.js?v=20261105125307"></script>
 </body>
 </html>

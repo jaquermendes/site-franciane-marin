@@ -134,6 +134,7 @@
 
   // ---------- Agenda geral ----------
   var DIAS_AGENDA = 14;
+  var MODOS_AGENDA = ['presencial', 'online'];
 
   function reservasDoDia(iso) {
     return (estado.painel.solicitacoes || []).filter(function (s) {
@@ -146,35 +147,150 @@
     return dia[modo].atual.filter(function (h) { return ocupados.indexOf(h) === -1; });
   }
 
+  // Um dia por vez, como a agenda de papel: cada horário é uma linha.
+  // Linha ocupada mostra a paciente; linha livre já deixa marcar ali mesmo.
+  estado.agendaIdx = 0;
+  estado.rapido = null; // { data, horario, modo } da linha livre aberta para marcar
+
+  function horaAgora() {
+    var d = new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  function rotuloDia(iso, i) {
+    if (i === 0 && iso === hojeAgenda()) return 'Hoje';
+    if (i === 1) return 'Amanhã';
+    return DIAS_CURTOS[deISO(iso).getDay()];
+  }
+
+  function mascaraTelefone(valor) {
+    if (/^\s*\+/.test(valor)) return valor;
+    var d = valor.replace(/\D/g, '').slice(0, 11);
+    return d.length <= 2 ? (d ? '(' + d : '') : '(' + d.slice(0, 2) + ') ' + (d.length <= 10 ? d.slice(2, 6) + (d.length > 6 ? '-' + d.slice(6) : '') : d.slice(2, 7) + '-' + d.slice(7));
+  }
+
+  function linhaReserva(s) {
+    var zap = String(s.telefone || '').replace(/\D/g, '');
+    return el('li', { classe: 'adm-ag-linha ocupada ' + s.status }, [
+      el('strong', { classe: 'adm-ag-hora', texto: s.horario }),
+      el('div', { classe: 'adm-ag-quem' }, [
+        el('strong', { texto: s.nome }),
+        el('span', { texto: formatoDe(s) + ' · ' + (s.status === 'confirmada' ? 'Confirmada' : 'Aguardando resposta') })
+      ]),
+      zap ? el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }) : null
+    ]);
+  }
+
+  function formRapido(dia, h, modo) {
+    var nome = el('input', { 'aria-label': 'Nome da paciente', placeholder: 'Nome', autocomplete: 'off' });
+    var tel = el('input', { 'aria-label': 'WhatsApp com DDD', placeholder: 'WhatsApp com DDD', type: 'tel', inputmode: 'tel' });
+    var erro = el('p', { classe: 'adm-erro', 'aria-live': 'polite' });
+    var salvar = el('button', { type: 'submit', classe: 'botao botao-rosa', texto: 'Marcar ' + h });
+    tel.addEventListener('input', function () { tel.value = mascaraTelefone(tel.value); });
+    var form = el('form', { classe: 'adm-ag-rapido', novalidate: 'novalidate' }, [
+      el('p', { classe: 'adm-ag-rapido-titulo', texto: dataCurta(dia.data) + ' às ' + h + ' · ' + (modo === 'online' ? 'Online' : 'Presencial') }),
+      el('div', { classe: 'adm-ag-rapido-campos' }, [nome, tel]),
+      erro,
+      el('div', { classe: 'adm-ag-rapido-acoes' }, [
+        salvar,
+        el('button', { type: 'button', classe: 'botao', texto: 'Cancelar', onclick: function () { estado.rapido = null; desenharAgenda(); } })
+      ])
+    ]);
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var internacional = /^\s*\+/.test(tel.value);
+      var digitos = tel.value.replace(/\D/g, '');
+      var completo = internacional ? digitos : '55' + digitos;
+      if (nome.value.trim().length < 2) { erro.textContent = 'Informe o nome.'; nome.focus(); return; }
+      if (internacional ? digitos.length < 8 : digitos.length < 10) { erro.textContent = 'Informe o WhatsApp com DDD.'; tel.focus(); return; }
+      salvar.disabled = true;
+      chamar('manual', {
+        nome: nome.value.trim(), modo: modo, data: dia.data, horario: h,
+        telefone: '+' + completo, telefoneExibicao: internacional ? tel.value.trim() : '+55 ' + tel.value
+      }).then(function (resp) {
+        if (resp.erro === 'conflito') { erro.textContent = 'Esse horário acabou de ser reservado para ' + resp.com + '.'; return; }
+        if (!resp.ok) throw new Error(resp.erro);
+        estado.rapido = null;
+        avisar('Marcado. Envie a confirmação em Solicitações > "Aguardando resposta".', true);
+        return recarregar();
+      }).catch(function (e) {
+        if (e.message !== 'sessao') erro.textContent = 'Não consegui salvar. Tente de novo.';
+      }).then(function () { salvar.disabled = false; });
+    });
+    setTimeout(function () { nome.focus(); }, 0);
+    return el('li', { classe: 'adm-ag-linha-form' }, [form]);
+  }
+
   function desenharAgenda() {
     var caixa = $('agenda-geral');
     caixa.innerHTML = '';
-    estado.painel.dias.slice(0, DIAS_AGENDA).forEach(function (dia) {
-      var reservas = reservasDoDia(dia.data);
-      var pres = livresDoDia(dia, 'presencial');
-      var onl = livresDoDia(dia, 'online');
-      var lista = el('ul', { classe: 'adm-agenda-lista' });
-      reservas.forEach(function (s) {
-        lista.appendChild(el('li', { classe: 'adm-agenda-item ' + s.status }, [
-          el('strong', { classe: 'adm-agenda-hora', texto: s.horario }),
-          el('span', { classe: 'adm-agenda-quem' }, [el('strong', { texto: s.nome }), ' · ' + formatoDe(s)]),
-          el('span', { classe: 'adm-status ' + s.status, texto: s.status === 'confirmada' ? 'Confirmada' : 'Aguardando resposta' })
-        ]));
-      });
-      if (!reservas.length) lista.appendChild(el('li', { classe: 'adm-agenda-vazio', texto: 'Nenhum atendimento marcado.' }));
-      var livres = el('p', { classe: 'adm-agenda-livres' }, [
-        el('span', {}, [el('strong', { texto: 'Livres presencial: ' }), pres.length ? pres.join(', ') : 'nenhum']),
-        el('span', {}, [el('strong', { texto: 'Livres online: ' }), onl.length ? onl.join(', ') : 'nenhum'])
-      ]);
-      caixa.appendChild(el('section', { classe: 'adm-cartao adm-agenda-dia' + (reservas.length ? '' : ' vazio') }, [
-        el('div', { classe: 'adm-agenda-cabeca' }, [
-          el('h3', { texto: dataLonga(dia.data) }),
-          el('button', { type: 'button', classe: 'botao', texto: '+ Atendimento neste dia', onclick: function () { abrirManual(dia.data); } })
-        ]),
-        lista,
-        livres
+    var dias = estado.painel.dias.slice(0, DIAS_AGENDA);
+    if (estado.agendaIdx >= dias.length) estado.agendaIdx = 0;
+
+    var tira = el('div', { classe: 'adm-ag-dias', role: 'tablist', 'aria-label': 'Escolha o dia' });
+    dias.forEach(function (dia, i) {
+      var n = reservasDoDia(dia.data).length;
+      tira.appendChild(el('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(i === estado.agendaIdx), classe: 'adm-ag-dia',
+        onclick: function () { estado.agendaIdx = i; estado.rapido = null; desenharAgenda(); }
+      }, [
+        el('span', { classe: 'adm-ag-dia-nome', texto: rotuloDia(dia.data, i) }),
+        el('strong', { texto: String(deISO(dia.data).getDate()) }),
+        el('span', { classe: 'adm-ag-dia-conta' + (n ? ' tem' : ''), texto: n ? n + (n > 1 ? ' consultas' : ' consulta') : 'livre' })
       ]));
     });
+
+    var dia = dias[estado.agendaIdx];
+    var reservas = reservasDoDia(dia.data);
+    var eHoje = dia.data === hojeAgenda();
+    var agora = horaAgora();
+    var mapa = {};
+    reservas.forEach(function (s) { mapa[s.horario] = { reserva: s }; });
+    MODOS_AGENDA.forEach(function (modo) {
+      livresDoDia(dia, modo).forEach(function (h) {
+        if (eHoje && h <= agora) return;
+        if (mapa[h] && mapa[h].reserva) return;
+        mapa[h] = mapa[h] || { modos: [] };
+        mapa[h].modos.push(modo);
+      });
+    });
+    var horas = Object.keys(mapa).sort();
+    var livres = horas.filter(function (h) { return !mapa[h].reserva; }).length;
+
+    var lista = el('ul', { classe: 'adm-ag-lista' });
+    horas.forEach(function (h) {
+      var item = mapa[h];
+      if (item.reserva) { lista.appendChild(linhaReserva(item.reserva)); return; }
+      var aberto = estado.rapido && estado.rapido.data === dia.data && estado.rapido.horario === h;
+      lista.appendChild(el('li', { classe: 'adm-ag-linha livre' + (aberto ? ' aberta' : '') }, [
+        el('strong', { classe: 'adm-ag-hora', texto: h }),
+        el('span', { classe: 'adm-ag-livre', texto: 'Livre' }),
+        el('div', { classe: 'adm-ag-marcar' }, item.modos.map(function (modo) {
+          var ativo = aberto && estado.rapido.modo === modo;
+          return el('button', {
+            type: 'button', classe: 'adm-ag-botao' + (ativo ? ' ativo' : ''),
+            texto: '+ ' + (modo === 'online' ? 'Online' : 'Presencial'),
+            onclick: function () { estado.rapido = { data: dia.data, horario: h, modo: modo }; desenharAgenda(); }
+          });
+        }))
+      ]));
+      if (aberto) lista.appendChild(formRapido(dia, h, estado.rapido.modo));
+    });
+    if (!horas.length) {
+      lista.appendChild(el('li', { classe: 'adm-ag-vazio', texto: eHoje ? 'Nada marcado e nenhum horário livre no resto de hoje.' : 'Nenhum horário aberto neste dia. Abra horários na aba "Horários disponíveis".' }));
+    }
+
+    caixa.appendChild(tira);
+    caixa.appendChild(el('section', { classe: 'adm-cartao adm-ag-dia-cartao' }, [
+      el('div', { classe: 'adm-ag-cabeca' }, [
+        el('div', {}, [
+          el('h3', { texto: dataLonga(dia.data) }),
+          el('p', { texto: (reservas.length ? reservas.length + (reservas.length > 1 ? ' consultas' : ' consulta') : 'Nenhuma consulta') + ' · ' + livres + (livres === 1 ? ' horário livre' : ' horários livres') })
+        ]),
+        el('button', { type: 'button', classe: 'botao', texto: 'Outro horário', onclick: function () { abrirManual(dia.data); } })
+      ]),
+      lista
+    ]));
   }
 
   // Formulário de atendimento manual.
@@ -203,7 +319,6 @@
       caixa.appendChild(el('button', { type: 'button', classe: 'adm-chip-hora' + ($('m-hora').value === h ? ' ativo' : ''), texto: h, onclick: function () { $('m-hora').value = h; atualizarLivresManual(); } }));
     });
   }
-  $('abrir-manual').addEventListener('click', function () { abrirManual(); });
   $('m-cancelar').addEventListener('click', function () { formManual.hidden = true; formManual.reset(); });
   $('m-data').addEventListener('change', atualizarLivresManual);
   $('m-modo').addEventListener('change', atualizarLivresManual);
