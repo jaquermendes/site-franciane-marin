@@ -456,3 +456,8 @@ button, input, select { font: inherit; }
   .hero-col .hero-sub { font-size: 15px; line-height: 1.45; }
 }
 .hero { overflow-x: clip; }
+
+/* Sobre: consultório em destaque, atendimento e formatura embaixo */
+.sobre-foto-consultorio { grid-column: 1 / -1; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 35%; border-radius: 24px; }
+.sobre-foto-pequena { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; object-position: 50% 60%; border-radius: 20px; }
+.sobre-foto-formatura-img { object-position: 50% 15%; }
