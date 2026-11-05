@@ -313,3 +313,27 @@
   .adm-ag-linha.bloqueada { grid-template-columns: 48px minmax(0, 1fr) auto; min-height: 48px; }
   .adm-ag-linha.bloqueada .adm-ag-marcar { grid-column: 3; grid-row: 1; justify-self: end; }
 }
+
+/* Agenda: Meu dia x Horários */
+.adm-ag-vista { display: inline-flex; padding: 3px; border-radius: 999px; background: #F2EDF0; flex: 0 0 auto; }
+.adm-ag-vista button { min-height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--texto-suave); font-size: 13px; font-weight: 700; cursor: pointer; }
+.adm-ag-vista button[aria-selected="true"] { background: var(--branco); color: var(--carvao); box-shadow: 0 1px 3px rgba(35, 30, 36, .12); }
+.adm-ag-outro { align-self: flex-start; min-height: 38px; padding: 0 14px; font-size: 13px; border: 1.5px solid var(--carvao); background: var(--branco); cursor: pointer; }
+.adm-ag-proximo { padding: 16px; border-radius: 16px; background: var(--carvao); color: var(--branco); display: flex; flex-direction: column; gap: 10px; }
+.adm-ag-proximo-rotulo { font-size: 13px; font-weight: 700; color: #F0B8DF; }
+.adm-ag-proximo.aguardando .adm-ag-proximo-rotulo { color: #F5C66A; }
+.adm-ag-proximo-linha { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.adm-ag-proximo-hora { font-family: var(--display); font-size: 28px; line-height: 1; }
+.adm-ag-proximo .adm-ag-quem strong { font-size: 17px; }
+.adm-ag-proximo .adm-ag-quem span { color: #D3CAD3; }
+.adm-ag-linha.passou { opacity: .5; }
+.adm-ag-vazio-dia { padding: 22px 16px; border-radius: 14px; border: 1.5px dashed #E2D6DE; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--texto-suave); }
+.adm-ag-vazio-dia .botao { min-height: 38px; padding: 0 14px; font-size: 13px; border: 1.5px solid var(--carvao); background: var(--branco); cursor: pointer; }
+.adm-ag-fim { font-size: 14px; color: var(--texto-suave); text-align: center; }
+@media (max-width: 600px) {
+  .adm-ag-cabeca { flex-direction: column; }
+  .adm-ag-vista { align-self: stretch; }
+  .adm-ag-vista button { flex: 1; }
+  .adm-ag-proximo-linha { grid-template-columns: auto minmax(0, 1fr); }
+  .adm-ag-proximo .adm-ag-zap { grid-column: 2; justify-self: start; }
+}

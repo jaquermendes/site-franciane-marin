@@ -151,6 +151,72 @@
   // Linha ocupada mostra a paciente; linha livre já deixa marcar ali mesmo.
   estado.agendaIdx = 0;
   estado.rapido = null; // { data, horario, modo } da linha livre aberta para marcar
+  // "dia": só os compromissos, para bater o olho; "horarios": a grade para marcar e tirar horários.
+  estado.vistaAgenda = 'dia';
+
+  function somarMin(h, min) {
+    var t = +h.slice(0, 2) * 60 + +h.slice(3) + min;
+    return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0');
+  }
+
+  function faltaTexto(de, ate) {
+    var m = (+ate.slice(0, 2) * 60 + +ate.slice(3)) - (+de.slice(0, 2) * 60 + +de.slice(3));
+    if (m < 60) return 'em ' + m + ' min';
+    var h = Math.floor(m / 60), r = m % 60;
+    return 'em ' + h + 'h' + (r ? String(r).padStart(2, '0') : '');
+  }
+
+  function cartaoProximo(s, agora) {
+    var fim = somarMin(s.horario, estado.painel.duracaoMin || 60);
+    var acontecendo = s.horario <= agora && agora < fim;
+    var zap = String(s.telefone || '').replace(/\D/g, '');
+    return el('div', { classe: 'adm-ag-proximo' + (s.status === 'aguardando' ? ' aguardando' : '') }, [
+      el('p', { classe: 'adm-ag-proximo-rotulo', texto: acontecendo ? 'Agora, até ' + fim : 'Próxima consulta · ' + faltaTexto(agora, s.horario) }),
+      el('div', { classe: 'adm-ag-proximo-linha' }, [
+        el('strong', { classe: 'adm-ag-proximo-hora', texto: s.horario }),
+        el('div', { classe: 'adm-ag-quem' }, [
+          el('strong', { texto: s.nome }),
+          el('span', { texto: (s.modo === 'online' ? 'Online, por vídeo' : 'Presencial, no consultório') + (s.status === 'aguardando' ? ' · ainda não confirmou' : '') })
+        ]),
+        zap ? el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }) : null
+      ])
+    ]);
+  }
+
+  function listaDoDia(reservas, bloqueados, eHoje, agora) {
+    var duracao = estado.painel.duracaoMin || 60;
+    var itens = reservas.map(function (s) { return { h: s.horario, reserva: s }; })
+      .concat(bloqueados.map(function (h) { return { h: h }; }))
+      .sort(function (a, b) { return a.h.localeCompare(b.h); });
+    var proxima = eHoje ? reservas.filter(function (s) { return somarMin(s.horario, duracao) > agora; })[0] : null;
+    var lista = el('ul', { classe: 'adm-ag-lista adm-ag-meudia' });
+    itens.forEach(function (it) {
+      var passou = eHoje && somarMin(it.h, duracao) <= agora;
+      if (!it.reserva) {
+        lista.appendChild(el('li', { classe: 'adm-ag-linha bloqueada' + (passou ? ' passou' : '') }, [
+          el('strong', { classe: 'adm-ag-hora', texto: it.h }),
+          el('span', { classe: 'adm-ag-livre', texto: 'Ocupado' })
+        ]));
+        return;
+      }
+      if (proxima && it.reserva === proxima) return;
+      var linha = linhaReserva(it.reserva);
+      if (passou) linha.classList.add('passou');
+      lista.appendChild(linha);
+    });
+    var partes = [];
+    if (proxima) partes.push(cartaoProximo(proxima, agora));
+    if (lista.children.length) partes.push(lista);
+    if (!itens.length) {
+      partes.push(el('div', { classe: 'adm-ag-vazio-dia' }, [
+        el('p', { texto: 'Nenhum compromisso neste dia.' }),
+        el('button', { type: 'button', classe: 'botao', texto: 'Ver horários livres', onclick: function () { estado.vistaAgenda = 'horarios'; desenharAgenda(); } })
+      ]));
+    } else if (eHoje && reservas.length && !proxima) {
+      partes.push(el('p', { classe: 'adm-ag-fim', texto: 'As consultas de hoje já terminaram.' }));
+    }
+    return partes;
+  }
 
   function horaAgora() {
     var d = new Date();
@@ -288,8 +354,11 @@
         mapa[h].modos.push(modo);
       });
     });
+    var bloqueadosDia = [];
     MODOS_AGENDA.forEach(function (modo) {
       dia[modo].padrao.forEach(function (h) {
+        var aberto = MODOS_AGENDA.some(function (m) { return dia[m].atual.indexOf(h) > -1; });
+        if (!aberto && !(mapa[h] && mapa[h].reserva) && bloqueadosDia.indexOf(h) === -1) bloqueadosDia.push(h);
         if (mapa[h] || (eHoje && h <= agora)) return;
         var emAlgum = MODOS_AGENDA.some(function (m) { return dia[m].atual.indexOf(h) > -1; });
         if (!emAlgum) mapa[h] = { bloqueado: true };
@@ -333,15 +402,38 @@
       lista.appendChild(el('li', { classe: 'adm-ag-vazio', texto: eHoje ? 'Nada marcado e nenhum horário livre no resto de hoje.' : 'Nenhum horário aberto neste dia. Abra horários na aba "Horários disponíveis".' }));
     }
 
+    var semConfirmar = reservas.filter(function (s) { return s.status !== 'confirmada'; }).length;
+    var resumo = (reservas.length ? reservas.length + (reservas.length > 1 ? ' consultas' : ' consulta') : 'Nenhuma consulta') +
+      (semConfirmar ? ' · ' + semConfirmar + ' sem confirmar' : '') +
+      (bloqueadosDia.length ? ' · ' + bloqueadosDia.length + (bloqueadosDia.length > 1 ? ' ocupados' : ' ocupado') : '');
+    var vista = el('div', { classe: 'adm-ag-vista', role: 'tablist', 'aria-label': 'Como ver o dia' }, [
+      ['dia', 'Meu dia'], ['horarios', 'Horários']
+    ].map(function (v) {
+      return el('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(estado.vistaAgenda === v[0]), texto: v[1],
+        onclick: function () { estado.vistaAgenda = v[0]; estado.rapido = null; desenharAgenda(); }
+      });
+    }));
+
     caixa.appendChild(tira);
+    if (estado.vistaAgenda === 'dia') {
+      caixa.appendChild(el('section', { classe: 'adm-cartao adm-ag-dia-cartao' }, [
+        el('div', { classe: 'adm-ag-cabeca' }, [
+          el('div', {}, [el('h3', { texto: dataLonga(dia.data) }), el('p', { texto: resumo })]),
+          vista
+        ])
+      ].concat(listaDoDia(reservas, bloqueadosDia.sort(), eHoje, agora))));
+      return;
+    }
     caixa.appendChild(el('section', { classe: 'adm-cartao adm-ag-dia-cartao' }, [
       el('div', { classe: 'adm-ag-cabeca' }, [
         el('div', {}, [
           el('h3', { texto: dataLonga(dia.data) }),
           el('p', { texto: (reservas.length ? reservas.length + (reservas.length > 1 ? ' consultas' : ' consulta') : 'Nenhuma consulta') + ' · ' + livres + (livres === 1 ? ' horário livre' : ' horários livres') })
         ]),
-        el('button', { type: 'button', classe: 'botao', texto: 'Outro horário', onclick: function () { abrirManual(dia.data); } })
+        vista
       ]),
+      el('button', { type: 'button', classe: 'botao adm-ag-outro', texto: '+ Marcar em outro horário', onclick: function () { abrirManual(dia.data); } }),
       lista
     ]));
   }
