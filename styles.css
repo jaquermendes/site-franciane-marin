@@ -472,3 +472,7 @@ button, input, select { font: inherit; }
 }
 .sobre-foto-formatura-card { width: 34%; right: -30px; bottom: 0; }
 @media (max-width: 760px) { .sobre-foto-formatura-card { width: 34%; right: -8px; } }
+
+/* Título do topo: segunda frase em destaque */
+.hero h1 .h1-destaque { display: block; color: var(--rosa); }
+.hero-col .hero-caneta { color: var(--texto); }
