@@ -813,6 +813,8 @@
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
+  estado.solVista = 'andamento';
+
   function desenharSolicitacoes() {
     var caixa = $('lista-solicitacoes');
     caixa.innerHTML = '';
@@ -830,20 +832,57 @@
     $('contador-novas').textContent = String(pendentes);
     $('contador-novas').hidden = !pendentes;
 
+    var vistas = [['andamento', 'Em andamento', pendentes], ['canceladas', 'Canceladas', canceladas.length], ['historico', 'Histórico', historico.length]];
+    caixa.appendChild(el('div', { classe: 'adm-sol-vistas', role: 'tablist', 'aria-label': 'O que ver' }, vistas.map(function (v) {
+      return el('button', {
+        type: 'button', role: 'tab', 'aria-selected': String(estado.solVista === v[0]),
+        onclick: function () { estado.solVista = v[0]; desenharSolicitacoes(); }
+      }, [v[1], el('span', { classe: 'adm-sol-vistas-num', texto: String(v[2]) })]);
+    })));
+
+    if (estado.solVista === 'canceladas') {
+      caixa.appendChild(el('p', { classe: 'adm-explica', texto: 'Pedidos e consultas cancelados nos últimos 30 dias. Se a paciente quiser voltar, toque em Reativar e o pedido volta para "Escolher horário".' }));
+      if (!canceladas.length) { caixa.appendChild(el('p', { classe: 'adm-vazio-linha', texto: 'Nenhum cancelamento nos últimos 30 dias.' })); return; }
+      var ulc = el('ul', { classe: 'adm-cancel-lista' });
+      canceladas.forEach(function (c) { ulc.appendChild(cartaoCancelada(c)); });
+      caixa.appendChild(ulc);
+      return;
+    }
+    if (estado.solVista === 'historico') {
+      caixa.appendChild(el('p', { classe: 'adm-explica', texto: 'Consultas que já aconteceram e pedidos arquivados.' }));
+      if (!historico.length) { caixa.appendChild(el('p', { classe: 'adm-vazio-linha', texto: 'Nada por aqui ainda.' })); return; }
+      var ulh = el('ul', { classe: 'adm-linhas adm-hist-lista' });
+      historico.forEach(function (h) { ulh.appendChild(cartaoHistorico(h)); });
+      caixa.appendChild(ulh);
+      return;
+    }
+
     grupo(caixa, '1', 'Escolher horário', 'Abra o pedido, marque a melhor sugestão e envie a proposta.', escolher, cartaoEscolher, resumoEscolher, acaoEscolher);
     grupo(caixa, '2', 'Aguardando resposta', 'O horário oferecido fica reservado até a paciente responder.', aguardando, cartaoAguardando, resumoAguardando, acaoAguardando);
     caixa.appendChild(el('p', { classe: 'adm-vazio-linha', texto: 'Depois que a paciente confirma, a consulta sai daqui e fica na Agenda, onde você envia a confirmação, o lembrete, remarca ou cancela.' }));
-
-    // Canceladas e histórico ficam fechados e em linhas curtas, para não ocupar espaço.
-    listaCompacta(caixa, 'Canceladas (' + canceladas.length + ')', canceladas);
-    listaCompacta(caixa, 'Arquivados e consultas realizadas (' + historico.length + ')', historico);
   }
 
-  function listaCompacta(caixa, titulo, lista) {
-    if (!lista.length) return;
-    var ul = el('ul', { classe: 'adm-linhas' });
-    lista.forEach(function (s) { ul.appendChild(cartaoHistorico(s)); });
-    caixa.appendChild(el('details', { classe: 'adm-historico' }, [el('summary', { texto: titulo }), ul]));
+  // Cancelada: quem era, quando seria e como falar com ela; dá para reativar.
+  function cartaoCancelada(c) {
+    var zap = String(c.telefone || '').replace(/\D/g, '');
+    var quando = isoValido(c.data)
+      ? 'Era ' + dataCurta(c.data) + ' às ' + c.horario
+      : 'Sugeriu ' + c.opcoes.map(function (o) { return dataCurta(o.data) + ' ' + o.horario; }).join(' · ');
+    return el('li', { classe: 'adm-cancel' }, [
+      el('div', { classe: 'adm-cancel-quem' }, [
+        el('strong', { texto: c.nome }),
+        el('span', { texto: formatoDe(c) + ' · ' + quando }),
+        el('span', { classe: 'adm-cancel-chegada', texto: chegada(c) + (c.origem === 'painel' ? ' · marcado pelo painel' : ' · pelo site') })
+      ]),
+      el('div', { classe: 'adm-cancel-acoes' }, [
+        zap ? el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }) : null,
+        el('button', { type: 'button', classe: 'adm-ag-botao', texto: 'Reativar', 'aria-label': 'Reativar o pedido de ' + c.nome, onclick: function () {
+          if (c.resolvido) resolver(c, false);
+          mudarStatus(c, 'nova', null, 'Pedido reativado. Ele voltou para "Escolher horário".');
+          estado.solVista = 'andamento';
+        } })
+      ])
+    ]);
   }
 
   // Pedidos abertos (expandidos) continuam abertos depois de recarregar a lista.
