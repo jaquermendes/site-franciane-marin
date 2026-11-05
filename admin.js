@@ -221,6 +221,40 @@
     return el('li', { classe: 'adm-ag-linha-form' }, [form]);
   }
 
+  // Ocupado/Liberar mexem só neste dia (exceção); a semana padrão não muda.
+  function trocarBloqueio(dia, h, bloquear) {
+    var mudancas = [];
+    MODOS_AGENDA.forEach(function (modo) {
+      var info = dia[modo];
+      var tem = info.atual.indexOf(h) > -1;
+      var nova;
+      if (bloquear && tem) nova = info.atual.filter(function (x) { return x !== h; });
+      else if (!bloquear && !tem && info.padrao.indexOf(h) > -1) nova = info.atual.concat([h]).sort();
+      else return;
+      var igualPadrao = nova.join() === info.padrao.join();
+      mudancas.push({ info: info, modo: modo, anterior: { atual: info.atual, personalizado: info.personalizado }, horarios: igualPadrao ? null : nova });
+      info.atual = nova;
+      info.personalizado = !igualPadrao;
+    });
+    if (!mudancas.length) return;
+    estado.rapido = null;
+    desenharAgenda();
+    mudancas.reduce(function (p, m) {
+      return p.then(function () {
+        return chamar('salvarDia', { data: dia.data, modo: m.modo, horarios: m.horarios }).then(function (resp) {
+          if (!resp.ok) throw new Error(resp.erro);
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      avisar(bloquear ? h + ' ficou ocupado só neste dia.' : h + ' voltou a ficar livre.', true);
+    }).catch(function (e) {
+      if (e.message === 'sessao') return;
+      mudancas.forEach(function (m) { m.info.atual = m.anterior.atual; m.info.personalizado = m.anterior.personalizado; });
+      desenharAgenda();
+      avisar('Não consegui salvar. Tente de novo.');
+    });
+  }
+
   function desenharAgenda() {
     var caixa = $('agenda-geral');
     caixa.innerHTML = '';
@@ -254,13 +288,30 @@
         mapa[h].modos.push(modo);
       });
     });
+    MODOS_AGENDA.forEach(function (modo) {
+      dia[modo].padrao.forEach(function (h) {
+        if (mapa[h] || (eHoje && h <= agora)) return;
+        var emAlgum = MODOS_AGENDA.some(function (m) { return dia[m].atual.indexOf(h) > -1; });
+        if (!emAlgum) mapa[h] = { bloqueado: true };
+      });
+    });
     var horas = Object.keys(mapa).sort();
-    var livres = horas.filter(function (h) { return !mapa[h].reserva; }).length;
+    var livres = horas.filter(function (h) { return !mapa[h].reserva && !mapa[h].bloqueado; }).length;
 
     var lista = el('ul', { classe: 'adm-ag-lista' });
     horas.forEach(function (h) {
       var item = mapa[h];
       if (item.reserva) { lista.appendChild(linhaReserva(item.reserva)); return; }
+      if (item.bloqueado) {
+        lista.appendChild(el('li', { classe: 'adm-ag-linha bloqueada' }, [
+          el('strong', { classe: 'adm-ag-hora', texto: h }),
+          el('span', { classe: 'adm-ag-livre', texto: 'Ocupado' }),
+          el('div', { classe: 'adm-ag-marcar' }, [
+            el('button', { type: 'button', classe: 'adm-ag-botao', texto: 'Liberar', onclick: function () { trocarBloqueio(dia, h, false); } })
+          ])
+        ]));
+        return;
+      }
       var aberto = estado.rapido && estado.rapido.data === dia.data && estado.rapido.horario === h;
       lista.appendChild(el('li', { classe: 'adm-ag-linha livre' + (aberto ? ' aberta' : '') }, [
         el('strong', { classe: 'adm-ag-hora', texto: h }),
@@ -272,7 +323,9 @@
             texto: '+ ' + (modo === 'online' ? 'Online' : 'Presencial'),
             onclick: function () { estado.rapido = { data: dia.data, horario: h, modo: modo }; desenharAgenda(); }
           });
-        }))
+        }).concat([
+          el('button', { type: 'button', classe: 'adm-ag-botao adm-ag-bloquear', texto: 'Ocupado', title: 'Tira este horário só neste dia', onclick: function () { trocarBloqueio(dia, h, true); } })
+        ]))
       ]));
       if (aberto) lista.appendChild(formRapido(dia, h, estado.rapido.modo));
     });
