@@ -337,3 +337,15 @@
   .adm-ag-proximo-linha { grid-template-columns: auto minmax(0, 1fr); }
   .adm-ag-proximo .adm-ag-zap { grid-column: 2; justify-self: start; }
 }
+
+/* Meu dia: ações da consulta (lembrete, mais) */
+.adm-ag-acoes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
+.adm-ag-zap.enviado { background: var(--branco); color: var(--whats); border: 1.5px solid var(--whats); }
+.adm-ag-detalhe { list-style: none; padding: 4px 4px 8px; }
+.adm-ag-detalhe .adm-item-corpo, .adm-ag-proximo-detalhe .adm-item-corpo { padding: 14px; border-radius: 14px; background: var(--branco); border: 1.5px solid #E8DEE5; color: var(--grafite); }
+.adm-ag-proximo-detalhe { margin-top: 6px; }
+.adm-ag-proximo .adm-ag-botao { background: transparent; color: var(--branco); border-color: #6B5F69; }
+@media (max-width: 600px) {
+  .adm-ag-acoes { grid-column: 2; justify-self: start; justify-content: flex-start; }
+  .adm-ag-proximo .adm-ag-acoes { grid-column: 1 / -1; }
+}

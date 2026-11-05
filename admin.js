@@ -153,6 +153,7 @@
   estado.rapido = null; // { data, horario, modo } da linha livre aberta para marcar
   // "dia": só os compromissos, para bater o olho; "horarios": a grade para marcar e tirar horários.
   estado.vistaAgenda = 'dia';
+  estado.agAberto = null; // consulta com o "Mais" aberto no Meu dia
 
   function somarMin(h, min) {
     var t = +h.slice(0, 2) * 60 + +h.slice(3) + min;
@@ -169,7 +170,6 @@
   function cartaoProximo(s, agora) {
     var fim = somarMin(s.horario, estado.painel.duracaoMin || 60);
     var acontecendo = s.horario <= agora && agora < fim;
-    var zap = String(s.telefone || '').replace(/\D/g, '');
     return el('div', { classe: 'adm-ag-proximo' + (s.status === 'aguardando' ? ' aguardando' : '') }, [
       el('p', { classe: 'adm-ag-proximo-rotulo', texto: acontecendo ? 'Agora, até ' + fim : 'Próxima consulta · ' + faltaTexto(agora, s.horario) }),
       el('div', { classe: 'adm-ag-proximo-linha' }, [
@@ -178,8 +178,9 @@
           el('strong', { texto: s.nome }),
           el('span', { texto: (s.modo === 'online' ? 'Online, por vídeo' : 'Presencial, no consultório') + (s.status === 'aguardando' ? ' · ainda não confirmou' : '') })
         ]),
-        zap ? el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }) : null
-      ])
+        el('div', { classe: 'adm-ag-acoes' }, botoesReserva(s))
+      ]),
+      estado.agAberto === s.id ? el('div', { classe: 'adm-ag-proximo-detalhe' }, [cartaoConfirmada(s)]) : null
     ]);
   }
 
@@ -200,9 +201,10 @@
         return;
       }
       if (proxima && it.reserva === proxima) return;
-      var linha = linhaReserva(it.reserva);
+      var linha = linhaReserva(it.reserva, true);
       if (passou) linha.classList.add('passou');
       lista.appendChild(linha);
+      if (estado.agAberto === it.reserva.id) lista.appendChild(detalheReserva(it.reserva));
     });
     var partes = [];
     if (proxima) partes.push(cartaoProximo(proxima, agora));
@@ -235,7 +237,46 @@
     return d.length <= 2 ? (d ? '(' + d : '') : '(' + d.slice(0, 2) + ') ' + (d.length <= 10 ? d.slice(2, 6) + (d.length > 6 ? '-' + d.slice(6) : '') : d.slice(2, 7) + '-' + d.slice(7));
   }
 
-  function linhaReserva(s) {
+  // Hoje ou amanhã: os dias em que faz sentido mandar lembrete.
+  function quandoLembrete(s) {
+    var hoje = hojeAgenda();
+    if (s.data === hoje) return 'hoje';
+    var d = deISO(hoje); d.setDate(d.getDate() + 1);
+    var amanha = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return s.data === amanha ? 'amanha' : null;
+  }
+
+  function botoesReserva(s) {
+    var zap = String(s.telefone || '').replace(/\D/g, '');
+    if (!zap) return [];
+    if (s.status !== 'confirmada') {
+      return [
+        el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }),
+        el('button', { type: 'button', classe: 'adm-ag-botao', texto: 'Paciente confirmou', onclick: function () { mudarStatus(s, 'confirmada', null, 'Consulta confirmada.'); } })
+      ];
+    }
+    var quando = quandoLembrete(s);
+    var enviado = lembretesEnviados()[s.id];
+    var botoes = [];
+    if (quando) {
+      var lembrete = el('a', {
+        classe: 'adm-ag-zap' + (enviado ? ' enviado' : ''), href: linkWhatsapp(s, textoLembrete(s, quando)), target: '_blank', rel: 'noopener',
+        texto: enviado ? '✓ Lembrete enviado' : 'Enviar lembrete'
+      });
+      lembrete.addEventListener('click', function () { marcarLembrete(s.id); setTimeout(desenharAgenda, 300); });
+      botoes.push(lembrete);
+    } else {
+      botoes.push(el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }));
+    }
+    var aberto = estado.agAberto === s.id;
+    botoes.push(el('button', {
+      type: 'button', classe: 'adm-ag-botao', 'aria-expanded': String(aberto), texto: aberto ? 'Fechar' : 'Mais',
+      onclick: function () { estado.agAberto = aberto ? null : s.id; desenharAgenda(); }
+    }));
+    return botoes;
+  }
+
+  function linhaReserva(s, comAcoes) {
     var zap = String(s.telefone || '').replace(/\D/g, '');
     return el('li', { classe: 'adm-ag-linha ocupada ' + s.status }, [
       el('strong', { classe: 'adm-ag-hora', texto: s.horario }),
@@ -243,8 +284,15 @@
         el('strong', { texto: s.nome }),
         el('span', { texto: formatoDe(s) + ' · ' + (s.status === 'confirmada' ? 'Confirmada' : 'Aguardando resposta') })
       ]),
-      zap ? el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }) : null
+      comAcoes
+        ? el('div', { classe: 'adm-ag-acoes' }, botoesReserva(s))
+        : (zap ? el('a', { classe: 'adm-ag-zap', href: 'https://wa.me/' + zap, target: '_blank', rel: 'noopener', texto: 'WhatsApp' }) : null)
     ]);
+  }
+
+  // Detalhe da consulta aberto pelo "Mais": a mesma confirmação de antes, remarcar e cancelar.
+  function detalheReserva(s) {
+    return el('li', { classe: 'adm-ag-detalhe' }, [cartaoConfirmada(s)]);
   }
 
   function formRapido(dia, h, modo) {
@@ -277,7 +325,7 @@
         if (resp.erro === 'conflito') { erro.textContent = 'Esse horário acabou de ser reservado para ' + resp.com + '.'; return; }
         if (!resp.ok) throw new Error(resp.erro);
         estado.rapido = null;
-        avisar('Marcado. Envie a confirmação em Solicitações > "Aguardando resposta".', true);
+        avisar('Marcado. Envie a confirmação em Solicitações online > "Aguardando resposta".', true);
         return recarregar();
       }).catch(function (e) {
         if (e.message !== 'sessao') erro.textContent = 'Não consegui salvar. Tente de novo.';
@@ -498,7 +546,7 @@
       if (!resp.ok) throw new Error(resp.erro);
       formManual.hidden = true;
       formManual.reset();
-      avisar('Atendimento salvo. Ele está em Solicitações > "Aguardando resposta" para você enviar a confirmação no WhatsApp.', true);
+      avisar('Atendimento salvo. Ele está em Solicitações online > "Aguardando resposta" para você enviar a confirmação no WhatsApp.', true);
       return recarregar();
     }).catch(function (e) {
       if (e.message !== 'sessao') $('m-erro').textContent = 'Não consegui salvar. Tente de novo.';
@@ -736,6 +784,23 @@
     ].join('\n');
   }
 
+  function textoLembrete(s, quando) {
+    var dia = quando === 'hoje' ? '*hoje, às ' + s.horario + '*' : '*amanhã, ' + dataLonga(s.data).toLowerCase() + ', às ' + s.horario + '*';
+    return [
+      'Olá, ' + primeiroNome(s) + '! 😊',
+      '⏰ Passando para lembrar da sua consulta ' + formatoDe(s) + ' ' + dia + '.',
+      textoLocal(s),
+      '',
+      'Se precisar remarcar, me avise por aqui. Até ' + (quando === 'hoje' ? 'já' : 'amanhã') + '!'
+    ].join('\n');
+  }
+
+  // Lembretes já enviados ficam marcados neste aparelho (só para não mandar duas vezes).
+  function lembretesEnviados() { try { return JSON.parse(localStorage.getItem('fm_lembretes') || '{}'); } catch (e) { return {}; } }
+  function marcarLembrete(id) {
+    try { var l = lembretesEnviados(); l[id] = Date.now(); localStorage.setItem('fm_lembretes', JSON.stringify(l)); } catch (e) { /* sem armazenamento */ }
+  }
+
   function chegada(s) {
     var d = new Date(s.criadoEm);
     if (isNaN(d)) return '';
@@ -753,11 +818,9 @@
     caixa.innerHTML = '';
     var hoje = hojeISO();
     var porChegada = function (a, b) { return String(a.criadoEm).localeCompare(String(b.criadoEm)); };
-    var porData = function (a, b) { return (a.data + a.horario).localeCompare(b.data + b.horario); };
     var todas = estado.painel.solicitacoes || [];
     var escolher = todas.filter(function (s) { return s.status === 'nova' && !s.resolvido; }).sort(porChegada);
     var aguardando = todas.filter(function (s) { return s.status === 'aguardando' && !s.resolvido; }).sort(porChegada);
-    var confirmadas = todas.filter(function (s) { return s.status === 'confirmada' && s.data >= hoje; }).sort(porData);
     var canceladas = todas.filter(function (s) { return s.status === 'cancelada'; }).sort(porChegada).reverse();
     var historico = todas.filter(function (s) {
       return s.status !== 'cancelada' && ((s.resolvido && s.status !== 'confirmada') || (s.status === 'confirmada' && s.data < hoje));
@@ -769,7 +832,7 @@
 
     grupo(caixa, '1', 'Escolher horário', 'Abra o pedido, marque a melhor sugestão e envie a proposta.', escolher, cartaoEscolher, resumoEscolher, acaoEscolher);
     grupo(caixa, '2', 'Aguardando resposta', 'O horário oferecido fica reservado até a paciente responder.', aguardando, cartaoAguardando, resumoAguardando, acaoAguardando);
-    grupo(caixa, '3', 'Consultas confirmadas', 'Próximas consultas. Abra para reenviar a confirmação, remarcar ou cancelar.', confirmadas, cartaoConfirmada, resumoConfirmada, acaoConfirmada);
+    caixa.appendChild(el('p', { classe: 'adm-vazio-linha', texto: 'Depois que a paciente confirma, a consulta sai daqui e fica na Agenda, onde você envia a confirmação, o lembrete, remarca ou cancela.' }));
 
     // Canceladas e histórico ficam fechados e em linhas curtas, para não ocupar espaço.
     listaCompacta(caixa, 'Canceladas (' + canceladas.length + ')', canceladas);
@@ -818,7 +881,6 @@
     return s.opcoes.length + (s.opcoes.length > 1 ? ' sugestões' : ' sugestão') + ' · ' + s.opcoes.map(function (o) { return dataCurta(o.data) + ' ' + o.horario; }).join(' · ');
   }
   function resumoAguardando(s) { return 'Ofereceu ' + dataCurta(s.data) + ' às ' + s.horario; }
-  function resumoConfirmada(s) { return dataCurta(s.data) + ' às ' + s.horario; }
 
   // Botão da linha: não abre/fecha o item quando clicado, a não ser que seja a intenção.
   function botaoLinha(texto, classe, aoClicar) {
@@ -833,10 +895,9 @@
   function acaoAguardando(s, item) {
     return el('span', { classe: 'adm-item-botoes' }, [
       botaoAlterna('Abrir', 'botao-contorno', item),
-      botaoLinha('Paciente confirmou', 'botao-rosa', function () { mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Ela está em "Consultas confirmadas".'); })
+      botaoLinha('Paciente confirmou', 'botao-rosa', function () { mudarStatus(s, 'confirmada', null, 'Consulta confirmada. Agora ela fica na Agenda.'); })
     ]);
   }
-  function acaoConfirmada(s, item) { return botaoAlterna('Abrir', 'botao-contorno', item); }
 
   function detalhesContato(s) {
     return el('p', { classe: 'adm-contato' }, [
