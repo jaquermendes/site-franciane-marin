@@ -462,3 +462,13 @@ button, input, select { font: inherit; }
 .sobre-foto-pequena { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; object-position: 50% 60%; border-radius: 20px; }
 .sobre-foto-formatura-img { object-position: 50% 15%; }
 .sobre-foto-retrato { object-position: 50% 22%; }
+
+/* Sobre: consultório grande com a formatura sobreposta no canto */
+.sobre-fotos { display: block; position: relative; padding-bottom: 40px; }
+.sobre-foto-formatura-card { position: absolute; right: -18px; bottom: 0; width: 40%; height: auto; aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 15%; border-radius: 20px; border: 6px solid var(--branco); box-shadow: 0 18px 40px rgba(35,30,36,.18); }
+@media (max-width: 760px) {
+  .sobre-fotos { padding-bottom: 28px; }
+  .sobre-foto-formatura-card { right: -6px; width: 38%; border-width: 4px; border-radius: 16px; }
+}
+.sobre-foto-formatura-card { width: 34%; right: -30px; bottom: 0; }
+@media (max-width: 760px) { .sobre-foto-formatura-card { width: 34%; right: -8px; } }
